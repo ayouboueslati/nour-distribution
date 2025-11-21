@@ -2,11 +2,13 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import {Card, Button} from '../../../components/ui/index';
+import {Card} from '../../../components/ui/index';
 import { 
   LineChart, Line, BarChart, Bar, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
 } from 'recharts';
+// import ProtectedRoute from '../../../components/ProtectedRoute';
+
 
 // Mock data - replace with API calls
 const dashboardData = {
@@ -256,6 +258,7 @@ export default function DashboardPage() {
   };
 
   return (
+    // <ProtectedRoute requiredRole={['super_admin', 'admin', 'manager', 'staff']}>
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
@@ -449,6 +452,7 @@ export default function DashboardPage() {
         </Card>
       </div>
     </div>
+    // </ProtectedRoute>
   );
 }
 
