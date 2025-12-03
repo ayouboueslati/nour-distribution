@@ -7,12 +7,15 @@ interface InputProps {
   label?: string;
   type?: string;
   placeholder?: string;
-  value: string;
+  value: string | number; 
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   error?: string;
   required?: boolean;
   disabled?: boolean;
+  helpText?: string;
+  step?: string;  
   className?: string;
+  min?: string | number;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -20,10 +23,13 @@ export const Input: React.FC<InputProps> = ({
   type = 'text',
   placeholder,
   value,
+  min,
   onChange,
   error,
   required = false,
   disabled = false,
+  helpText,
+  step,           
   className = ''
 }) => {
   return (
@@ -37,6 +43,7 @@ export const Input: React.FC<InputProps> = ({
       <input
         type={type}
         value={value}
+        step={step}
         onChange={onChange}
         placeholder={placeholder}
         disabled={disabled}
@@ -45,12 +52,15 @@ export const Input: React.FC<InputProps> = ({
           ${error ? 'border-red-500 focus:border-red-500' : 'border-stone-300 focus:border-stone-500'}
           focus:outline-none disabled:bg-stone-50 disabled:cursor-not-allowed`}
       />
-      {error && (
+
+      {error ? (
         <p className="text-sm text-red-600 flex items-center gap-1">
           <AlertCircle className="h-4 w-4" />
           {error}
         </p>
-      )}
+      ) : helpText ? (
+        <p className="text-xs text-stone-500">{helpText}</p>
+      ) : null}
     </div>
   );
 };

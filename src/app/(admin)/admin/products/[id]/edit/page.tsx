@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button, Input, Card, Textarea, Select } from '../../../../components/ui';
-import { apiService } from '../../../../lib/api';
+import { useRouter, useParams } from 'next/navigation';
+import { Button, Input, Card, Textarea, Select } from '../../../../../components/ui';
+import { apiService } from '../../../../../lib/api';
+import { Product } from '../../../../../../types';
 
 interface Category {
   id: string;
@@ -15,11 +16,17 @@ interface Supplier {
   company_name: string;
 }
 
-export default function NewProductPage() {
+export default function EditProductPage() {
   const router = useRouter();
+  const params = useParams();
+  const productId = params.id as string;
+
+  const [product, setProduct] = useState<Product | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     // Basic Information
@@ -74,29 +81,66 @@ export default function NewProductPage() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Fetch categories and suppliers
+  // Fetch product data, categories and suppliers
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [categoriesData, suppliersData] = await Promise.all([
+        setInitialLoading(true);
+        const [productData, categoriesData, suppliersData] = await Promise.all([
+          apiService.getProduct(productId),
           apiService.getCategories(),
           apiService.getSuppliers()
         ]);
+
+        setProduct(productData);
         setCategories(categoriesData.categories || []);
         setSuppliers(suppliersData.suppliers || []);
-      } catch (error) {
+
+        // Populate form with existing data
+        setFormData({
+          name: productData.name || '',
+          description: productData.description || '',
+          short_description: productData.short_description || '',
+          sku: productData.sku || '',
+          barcode: productData.barcode || '',
+          category_id: productData.category_id || '',
+          hair_type: productData.hair_type || '',
+          hair_texture: productData.hair_texture || '',
+          hair_length: productData.hair_length || '',
+          hair_color: productData.hair_color || '',
+          hair_origin: productData.hair_origin || '',
+          hair_quality: productData.hair_quality || '',
+          weight_grams: productData.weight_grams || '',
+          bundle_pieces: productData.bundle_pieces?.toString() || '1',
+          package_dimensions: productData.package_dimensions || '',
+          stock_quantity: productData.stock_quantity?.toString() || '0',
+          min_stock_level: productData.min_stock_level?.toString() || '5',
+          max_stock_level: productData.max_stock_level || '',
+          cost_price: productData.cost_price || '',
+          wholesale_price: productData.wholesale_price || '',
+          retail_price: productData.retail_price || '',
+          supplier_id: productData.supplier_id || '',
+          supplier_sku: productData.supplier_sku || '',
+          is_active: productData.is_active !== undefined ? productData.is_active : true,
+          is_featured: productData.is_featured || false,
+          is_best_seller: productData.is_best_seller || false,
+          is_new_arrival: productData.is_new_arrival !== undefined ? productData.is_new_arrival : true,
+          main_image: productData.main_image || '',
+          meta_title: productData.meta_title || '',
+          meta_description: productData.meta_description || '',
+          search_keywords: productData.search_keywords || ''
+        });
+
+      } catch (error: any) {
+        setError(error.message || 'Erreur lors du chargement des données');
         console.error('Error fetching data:', error);
+      } finally {
+        setInitialLoading(false);
       }
     };
 
     fetchData();
-  }, []);
-
-  const generateSKU = () => {
-    const prefix = 'NOUR';
-    const random = Math.random().toString(36).substr(2, 6).toUpperCase();
-    setFormData(prev => ({ ...prev, sku: `${prefix}-${random}` }));
-  };
+  }, [productId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,19 +182,19 @@ export default function NewProductPage() {
         hair_quality: formData.hair_quality.trim() || null,
         
         // Packaging
-        weight_grams: formData.weight_grams ? parseInt(formData.weight_grams as string) : null,
-        bundle_pieces: parseInt(formData.bundle_pieces) || 1,
+        weight_grams: formData.weight_grams ? Number(formData.weight_grams) : null,
+        bundle_pieces: Number(formData.bundle_pieces) || 1,
         package_dimensions: formData.package_dimensions.trim() || null,
         
         // Inventory
-        stock_quantity: parseInt(formData.stock_quantity) || 0,
-        min_stock_level: parseInt(formData.min_stock_level) || 5,
-        max_stock_level: formData.max_stock_level ? parseInt(formData.max_stock_level as string) : null,
+        stock_quantity: Number(formData.stock_quantity) || 0,
+        min_stock_level: Number(formData.min_stock_level) || 5,
+        max_stock_level: formData.max_stock_level ? Number(formData.max_stock_level) : null,
         
         // Pricing
-        cost_price: formData.cost_price ? parseFloat(formData.cost_price as string) : null,
-        wholesale_price: formData.wholesale_price ? parseFloat(formData.wholesale_price as string) : null,
-        retail_price: formData.retail_price ? parseFloat(formData.retail_price as string) : null,
+        cost_price: formData.cost_price ? Number(formData.cost_price) : null,
+        wholesale_price: formData.wholesale_price ? Number(formData.wholesale_price) : null,
+        retail_price: formData.retail_price ? Number(formData.retail_price) : null,
         
         // Supplier
         supplier_id: formData.supplier_id,
@@ -169,14 +213,14 @@ export default function NewProductPage() {
         search_keywords: formData.search_keywords.trim() || null
       };
 
-      console.log('📤 Sending product data:', submitData);
-      await apiService.createProduct(submitData);
+      console.log('📤 Updating product data:', submitData);
+      await apiService.updateProduct(productId, submitData);
 
-      // Redirect to products list
-      router.push('/admin/products');
+      // Redirect to product detail page
+      router.push(`/admin/products/${productId}`);
     } catch (error: any) {
-      console.error('Error creating product:', error);
-      setErrors({ submit: error.message || 'Erreur lors de la création du produit' });
+      console.error('Error updating product:', error);
+      setErrors({ submit: error.message || 'Erreur lors de la modification du produit' });
     } finally {
       setLoading(false);
     }
@@ -189,17 +233,39 @@ export default function NewProductPage() {
     }
   };
 
+  if (initialLoading) {
+    return (
+      <div className="p-6 flex justify-center items-center min-h-96">
+        <div className="text-stone-600">Chargement du produit...</div>
+      </div>
+    );
+  }
+
+  if (error && !product) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <h3 className="text-red-800 font-medium">Erreur</h3>
+          <p className="text-red-600 mt-1">{error}</p>
+          <Button variant="primary" onClick={() => router.push('/admin/products')} className="mt-3">
+            Retour aux produits
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-light text-stone-800">Nouveau Produit</h1>
-          <p className="text-stone-600 mt-1">Ajoutez un nouveau produit à votre catalogue</p>
+          <Button variant="ghost" onClick={() => router.back()} className="mb-2">
+            ← Retour
+          </Button>
+          <h1 className="text-3xl font-light text-stone-800">Modifier le Produit</h1>
+          <p className="text-stone-600 mt-1">SKU: {product?.sku}</p>
         </div>
-        <Button variant="secondary" onClick={() => router.back()}>
-          ← Retour
-        </Button>
       </div>
 
       {errors.submit && (
@@ -254,7 +320,7 @@ export default function NewProductPage() {
                     required
                   />
 
-                  <div className="flex space-x-3">
+                  <div className="grid grid-cols-2 gap-4">
                     <Input
                       label="Référence (SKU) *"
                       value={formData.sku}
@@ -263,22 +329,14 @@ export default function NewProductPage() {
                       error={errors.sku}
                       required
                     />
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={generateSKU}
-                      className="mt-6"
-                    >
-                      Générer
-                    </Button>
-                  </div>
 
-                  <Input
-                    label="Code-barres"
-                    value={formData.barcode}
-                    onChange={(e) => handleChange('barcode', e.target.value)}
-                    placeholder="1234567890123"
-                  />
+                    <Input
+                      label="Code-barres"
+                      value={formData.barcode}
+                      onChange={(e) => handleChange('barcode', e.target.value)}
+                      placeholder="1234567890123"
+                    />
+                  </div>
                 </div>
               </div>
             </Card>
@@ -534,7 +592,7 @@ export default function NewProductPage() {
           <Button
             type="button"
             variant="secondary"
-            onClick={() => router.back()}
+            onClick={() => router.push(`/admin/products/${productId}`)}
             disabled={loading}
           >
             Annuler
@@ -544,7 +602,7 @@ export default function NewProductPage() {
             variant="primary"
             disabled={loading}
           >
-            {loading ? 'Création...' : 'Créer le Produit'}
+            {loading ? 'Mise à jour...' : 'Mettre à jour le Produit'}
           </Button>
         </div>
       </form>
