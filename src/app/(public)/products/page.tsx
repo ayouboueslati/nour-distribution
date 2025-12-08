@@ -2,140 +2,195 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Filter, Grid3X3, List, X } from 'lucide-react';
+import { Filter, Grid3X3, List, X, Loader2 } from 'lucide-react';
 import ProductCard from '../../components/features/ProductCard';
-
-// Mock data - replace with actual API data later
-const products = [
-    {
-        id: 1,
-        name: "Expression Braid Classic",
-        category: "Synthétique Premium",
-        description: "Cheveux synthétiques de haute qualité pour tresses professionnelles",
-        stock: 150,
-        image: "/images/products/expression-braid.jpg"
-    },
-    {
-        id: 2,
-        name: "X-Pression Ultra",
-        category: "Haute Qualité",
-        description: "Texture ultra-naturelle et résistance exceptionnelle",
-        stock: 89,
-        image: "/images/products/x-pression.jpg"
-    },
-    {
-        id: 3,
-        name: "Crochet Twist Natural",
-        category: "Collection Naturelle",
-        description: "Effet naturel parfait pour les twists et braids",
-        stock: 200,
-        image: "/images/products/crochet-twist.jpg"
-    },
-    {
-        id: 4,
-        name: "Kanekalon Jumbo Braid",
-        category: "Format Jumbo",
-        description: "Idéal pour les tresses épaisses et volumineuses",
-        stock: 75,
-        image: "/images/products/kanekalon-jumbo.jpg"
-    },
-    {
-        id: 5,
-        name: "Marley Twist Premium",
-        category: "Texture Marley",
-        description: "Texture bouclée naturelle pour un look authentique",
-        stock: 120,
-        image: "/images/products/marley-twist.jpg"
-    },
-    {
-        id: 6,
-        name: "Bohemian Locs",
-        category: "Style Bohème",
-        description: "Pour des locks légères et naturelles",
-        stock: 95,
-        image: "/images/products/bohemian-locs.jpg"
-    }
-];
-
-const categories = [
-    "Toutes les catégories",
-    "Synthétique Premium",
-    "Haute Qualité",
-    "Collection Naturelle",
-    "Format Jumbo",
-    "Texture Marley",
-    "Style Bohème"
-];
+import { apiService } from '../../lib/api';
+import { Product, Category, ProductListResponse } from '../../../types';
 
 export default function ProductsPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     
-    const [selectedCategory, setSelectedCategory] = useState<string>('Toutes les catégories');
+    const [products, setProducts] = useState<Product[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+    const [selectedCategoryName, setSelectedCategoryName] = useState<string>('Toutes les catégories');
     const [inStockOnly, setInStockOnly] = useState<boolean>(true);
     const [lowStockOnly, setLowStockOnly] = useState<boolean>(false);
-    const [filteredProducts, setFilteredProducts] = useState(products);
+    const [searchTerm, setSearchTerm] = useState<string>('');
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string>('');
+    
+    // Pagination
+    const [currentPage, setCurrentPage] = useState<number>(1);
+    const [totalProducts, setTotalProducts] = useState<number>(0);
+    const pageSize = 12;
 
     // Get category from URL parameter
     const urlCategory = searchParams.get('category');
 
+    // Fetch categories on mount
     useEffect(() => {
-        if (urlCategory) {
-            setSelectedCategory(urlCategory);
-        }
-    }, [urlCategory]);
+        fetchCategories();
+    }, []);
 
+    // Fetch products when filters change
     useEffect(() => {
-        let filtered = products;
+        fetchProducts();
+    }, [selectedCategoryId, inStockOnly, lowStockOnly, searchTerm, currentPage]);
 
-        // Apply category filter
-        if (selectedCategory !== 'Toutes les catégories') {
-            filtered = filtered.filter(product => product.category === selectedCategory);
+    // Handle URL category parameter
+    useEffect(() => {
+        if (urlCategory && Array.isArray(categories) && categories.length > 0) {
+            const category = categories.find(c => c.name === urlCategory);
+            if (category) {
+                setSelectedCategoryId(category.id);
+                setSelectedCategoryName(category.name);
+            }
         }
+    }, [urlCategory, categories]);
 
-        // Apply stock filters
-        if (inStockOnly) {
-            filtered = filtered.filter(product => product.stock > 0);
+    const fetchCategories = async () => {
+        try {
+            const response = await apiService.getCategories();
+            // The API returns an object with a 'categories' property
+            // Check if response is an object and has categories property
+            if (response && typeof response === 'object' && 'categories' in response) {
+                setCategories(Array.isArray(response.categories) ? response.categories : []);
+            } else if (Array.isArray(response)) {
+                // Fallback: if response is directly an array
+                setCategories(response);
+            } else {
+                console.warn('Unexpected categories response format:', response);
+                setCategories([]);
+            }
+        } catch (err: any) {
+            console.error('Error fetching categories:', err);
+            setError('Erreur lors du chargement des catégories');
+            setCategories([]);
         }
-        if (lowStockOnly) {
-            filtered = filtered.filter(product => product.stock > 0 && product.stock < 20);
+    };
+
+    const fetchProducts = async () => {
+        setLoading(true);
+        setError('');
+        
+        try {
+            const params: any = {
+                skip: (currentPage - 1) * pageSize,
+                limit: pageSize,
+            };
+
+            if (selectedCategoryId) {
+                params.category_id = selectedCategoryId;
+            }
+
+            if (inStockOnly) {
+                params.is_active = true;
+            }
+
+            if (searchTerm) {
+                params.search = searchTerm;
+            }
+
+            const response = await apiService.getProducts(params);
+            
+            // Handle different response structures
+            let productsArray: Product[] = [];
+            let total = 0;
+            
+            if (response && typeof response === 'object') {
+                // Check for 'products' property (from ProductListResponse)
+                if ('products' in response && Array.isArray(response.products)) {
+                    productsArray = response.products;
+                    total = response.total || productsArray.length;
+                }
+                // Check for 'data' property (alternative structure)
+                else if ('data' in response && Array.isArray(response.data)) {
+                    productsArray = response.data;
+                    total = response.total || productsArray.length;
+                }
+                // If response itself is an array
+                else if (Array.isArray(response)) {
+                    productsArray = response;
+                    total = response.length;
+                }
+            }
+
+            let filteredProducts = productsArray;
+
+            // Apply client-side filters for low stock
+            if (lowStockOnly) {
+                filteredProducts = filteredProducts.filter((p: Product) => 
+                    p.available_quantity > 0 && p.available_quantity < 20
+                );
+            }
+
+            // Apply client-side filter for in stock
+            if (inStockOnly) {
+                filteredProducts = filteredProducts.filter((p: Product) => 
+                    p.available_quantity > 0
+                );
+            }
+
+            setProducts(filteredProducts);
+            setTotalProducts(total);
+        } catch (err: any) {
+            console.error('Error fetching products:', err);
+            setError('Erreur lors du chargement des produits');
+            setProducts([]);
+            setTotalProducts(0);
+        } finally {
+            setLoading(false);
         }
+    };
 
-        setFilteredProducts(filtered);
-    }, [selectedCategory, inStockOnly, lowStockOnly]);
-
-    const handleViewDetails = (productId: number) => {
-        console.log('Viewing product details:', productId);
+    const handleViewDetails = (productId: string) => {
         router.push(`/products/${productId}`);
     };
 
-    const getStockStatus = (stock: number) => {
-        if (stock === 0) return "Rupture de stock";
-        if (stock < 20) return "Stock limité";
+    const getStockStatus = (availableQty: number, needsRestock: boolean): string => {
+        if (availableQty === 0) return "Rupture de stock";
+        if (needsRestock || availableQty < 20) return "Stock limité";
         return "En stock";
     };
 
-    const handleCategoryChange = (category: string) => {
-        setSelectedCategory(category);
-        if (category === 'Toutes les catégories') {
-            // Remove category from URL
+    const handleCategoryChange = (categoryId: string, categoryName: string) => {
+        setSelectedCategoryId(categoryId);
+        setSelectedCategoryName(categoryName);
+        setCurrentPage(1);
+        
+        if (categoryName === 'Toutes les catégories') {
             router.push('/products');
         } else {
-            // Update URL with category
-            router.push(`/products?category=${encodeURIComponent(category)}`);
+            router.push(`/products?category=${encodeURIComponent(categoryName)}`);
         }
     };
 
     const clearCategoryFilter = () => {
-        setSelectedCategory('Toutes les catégories');
+        setSelectedCategoryId('');
+        setSelectedCategoryName('Toutes les catégories');
+        setCurrentPage(1);
         router.push('/products');
     };
 
     const resetAllFilters = () => {
-        setSelectedCategory('Toutes les catégories');
+        setSelectedCategoryId('');
+        setSelectedCategoryName('Toutes les catégories');
         setInStockOnly(true);
         setLowStockOnly(false);
+        setSearchTerm('');
+        setCurrentPage(1);
         router.push('/products');
+    };
+
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchTerm(e.target.value);
+        setCurrentPage(1);
+    };
+
+    const handleLoadMore = () => {
+        setCurrentPage(prev => prev + 1);
     };
 
     return (
@@ -150,10 +205,10 @@ export default function ProductsPage() {
                         <p className="text-lg text-stone-600 max-w-2xl mx-auto">
                             Découvrez notre sélection complète de cheveux de tresse africaine de qualité professionnelle
                         </p>
-                        {selectedCategory !== 'Toutes les catégories' && (
+                        {selectedCategoryName !== 'Toutes les catégories' && (
                             <div className="mt-4 flex items-center justify-center gap-2">
                                 <span className="text-amber-600 font-medium">
-                                    Filtre actif: {selectedCategory}
+                                    Filtre actif: {selectedCategoryName}
                                 </span>
                                 <button
                                     onClick={clearCategoryFilter}
@@ -180,23 +235,50 @@ export default function ProductsPage() {
                                 <Filter className="h-5 w-5 text-stone-500" />
                             </div>
 
+                            {/* Search */}
+                            <div className="mb-6">
+                                <h4 className="font-medium text-stone-900 mb-3">Recherche</h4>
+                                <input
+                                    type="text"
+                                    placeholder="Nom, SKU..."
+                                    value={searchTerm}
+                                    onChange={handleSearchChange}
+                                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
+                                />
+                            </div>
+
                             {/* Category Filter */}
                             <div className="mb-6">
                                 <h4 className="font-medium text-stone-900 mb-3">Catégories</h4>
-                                <div className="space-y-2">
-                                    {categories.map((category, index) => (
-                                        <label key={index} className="flex items-center space-x-3 cursor-pointer">
+                                <div className="space-y-2 max-h-64 overflow-y-auto">
+                                    <label className="flex items-center space-x-3 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="category"
+                                            checked={selectedCategoryId === ''}
+                                            onChange={() => handleCategoryChange('', 'Toutes les catégories')}
+                                            className="h-4 w-4 text-amber-600 focus:ring-amber-500 border-stone-300"
+                                        />
+                                        <span className="text-sm text-stone-700">Toutes les catégories</span>
+                                    </label>
+                                    {Array.isArray(categories) && categories.map((category) => (
+                                        <label key={category.id} className="flex items-center space-x-3 cursor-pointer">
                                             <input
                                                 type="radio"
                                                 name="category"
-                                                value={category}
-                                                checked={selectedCategory === category}
-                                                onChange={() => handleCategoryChange(category)}
+                                                value={category.id}
+                                                checked={selectedCategoryId === category.id}
+                                                onChange={() => handleCategoryChange(category.id, category.name)}
                                                 className="h-4 w-4 text-amber-600 focus:ring-amber-500 border-stone-300"
                                             />
-                                            <span className="text-sm text-stone-700">{category}</span>
+                                            <span className="text-sm text-stone-700">{category.name}</span>
                                         </label>
                                     ))}
+                                    {(!Array.isArray(categories) || categories.length === 0) && !loading && (
+                                        <p className="text-sm text-stone-500 italic text-center py-2">
+                                            Aucune catégorie disponible
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 
@@ -240,11 +322,17 @@ export default function ProductsPage() {
                         {/* Toolbar */}
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                             <div className="text-stone-600">
-                                <span className="font-medium">{filteredProducts.length}</span> produits trouvés
-                                {selectedCategory !== 'Toutes les catégories' && (
-                                    <span className="text-amber-600 ml-2">
-                                        dans {selectedCategory}
-                                    </span>
+                                {loading ? (
+                                    <span>Chargement...</span>
+                                ) : (
+                                    <>
+                                        <span className="font-medium">{products.length}</span> produits trouvés
+                                        {selectedCategoryName !== 'Toutes les catégories' && (
+                                            <span className="text-amber-600 ml-2">
+                                                dans {selectedCategoryName}
+                                            </span>
+                                        )}
+                                    </>
                                 )}
                             </div>
                             
@@ -258,38 +346,45 @@ export default function ProductsPage() {
                                         <List className="h-4 w-4" />
                                     </button>
                                 </div>
-
-                                {/* Sort */}
-                                <select className="bg-white border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
-                                    <option>Trier par: Pertinence</option>
-                                    <option>Nom: A à Z</option>
-                                    <option>Nom: Z à A</option>
-                                    <option>Stock: Élevé à faible</option>
-                                    <option>Stock: Faible à élevé</option>
-                                </select>
                             </div>
                         </div>
 
+                        {/* Error State */}
+                        {error && (
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                                <p className="text-red-800">{error}</p>
+                            </div>
+                        )}
+
+                        {/* Loading State */}
+                        {loading && (
+                            <div className="flex justify-center items-center py-12">
+                                <Loader2 className="h-8 w-8 text-amber-600 animate-spin" />
+                            </div>
+                        )}
+
                         {/* Products Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {filteredProducts.map((product) => (
-                                <ProductCard
-                                    key={product.id}
-                                    id={product.id}
-                                    name={product.name}
-                                    category={product.category}
-                                    stock={getStockStatus(product.stock)}
-                                    stockQuantity={product.stock}
-                                    image={product.image}
-                                    description={product.description}
-                                    onViewDetails={handleViewDetails}
-                                    buttonType="cart"
-                                />
-                            ))}
-                        </div>
+                        {!loading && !error && products.length > 0 && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {products.map((product) => (
+                                    <ProductCard
+                                        key={product.id}
+                                        id={product.id}
+                                        name={product.name}
+                                        category={product.category?.name || 'Non catégorisé'}
+                                        stock={getStockStatus(product.available_quantity, product.needs_restock)}
+                                        stockQuantity={product.available_quantity}
+                                        image={product.main_image || '/images/products/placeholder.jpg'}
+                                        description={product.short_description || product.description || ''}
+                                        onViewDetails={() => handleViewDetails(product.id)}
+                                        buttonType="cart"
+                                    />
+                                ))}
+                            </div>
+                        )}
 
                         {/* Empty State */}
-                        {filteredProducts.length === 0 && (
+                        {!loading && !error && products.length === 0 && (
                             <div className="text-center py-12">
                                 <div className="bg-white rounded-lg border border-stone-200 p-8">
                                     <Filter className="h-12 w-12 text-stone-300 mx-auto mb-4" />
@@ -310,9 +405,12 @@ export default function ProductsPage() {
                         )}
 
                         {/* Load More */}
-                        {filteredProducts.length > 0 && (
+                        {!loading && !error && products.length > 0 && totalProducts > (currentPage * pageSize) && (
                             <div className="text-center mt-12">
-                                <button className="bg-white text-stone-800 px-8 py-3 rounded-lg font-medium border border-stone-300 hover:border-amber-600 hover:bg-stone-50 transition-colors">
+                                <button 
+                                    onClick={handleLoadMore}
+                                    className="bg-white text-stone-800 px-8 py-3 rounded-lg font-medium border border-stone-300 hover:border-amber-600 hover:bg-stone-50 transition-colors"
+                                >
                                     Charger plus de produits
                                 </button>
                             </div>

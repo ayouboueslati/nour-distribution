@@ -5,6 +5,9 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from '../../context/AuthContext';
 import { LogOut, User, Mail, Circle, Settings } from 'lucide-react';
+import { GlobalPermissionModal } from '../../components/permission/GlobalPermissionModal';
+import { NotificationProvider } from "../../lib/notifications";
+
 
 const navigation = [
   { name: 'Tableau de Bord', href: '/admin/dashboard', icon: '📊' },

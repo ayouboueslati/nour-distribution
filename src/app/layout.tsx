@@ -7,7 +7,8 @@ import Footer from './components/layout/Footer'
 import { CartProvider } from './context/CartContext'
 import LayoutContent from './components/LayoutContent'
 import { AuthProvider } from './context/AuthContext'
-
+import { NotificationProvider } from "./lib/notifications";
+import { GlobalPermissionModal } from "./components/permission/GlobalPermissionModal";
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
@@ -23,6 +24,7 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body className={inter.className}>
+        <NotificationProvider>
         <AuthProvider>
           <CartProvider>
             <div className="min-h-screen flex flex-col">
@@ -32,6 +34,7 @@ export default function RootLayout({
             </div>
           </CartProvider>
         </AuthProvider>
+        </NotificationProvider>
       </body>
     </html>
   )

@@ -6,14 +6,14 @@ import { ShoppingCart, Heart, Eye, Sparkles, Package, ArrowRight, Plus, Minus } 
 import { useCart } from '../../context/CartContext';
 
 interface ProductCardProps {
-  id: number;
+  id: string; // ✅ Changed from number to string for UUID
   name: string;
   category: string;
   stock?: string;
   stockQuantity?: number;
   image: string;
   description?: string;
-  onViewDetails?: (productId: number) => void;
+  onViewDetails?: (productId: string) => void; // ✅ Changed parameter to string
   onExploreCategory?: (category: string) => void;
   buttonType?: 'cart' | 'explore';
 }
@@ -108,10 +108,10 @@ const ProductCard = ({
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Gradient Border Effect */}
-      <div className="absolute inset-0 bg-linear-to-br from-amber-200 via-orange-200 to-amber-300 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl -z-10 blur-sm"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-amber-200 via-orange-200 to-amber-300 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl -z-10 blur-sm"></div>
       
       {/* Product Image Container */}
-      <div className="relative h-80 bg-linear-to-br from-stone-50 to-neutral-100 overflow-hidden">
+      <div className="relative h-80 bg-gradient-to-br from-stone-50 to-neutral-100 overflow-hidden">
         {/* Product Image with Next.js Optimization */}
         {!imageError && image ? (
           <Image
@@ -121,6 +121,7 @@ const ProductCard = ({
             className="object-cover transition-transform duration-700 group-hover:scale-110"
             onError={() => setImageError(true)}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            unoptimized // ✅ Added for external URLs from database
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-stone-100">
@@ -130,7 +131,7 @@ const ProductCard = ({
         )}
         
         {/* Hover Overlay */}
-        <div className={`absolute inset-0 bg-linear-to-t from-stone-900/60 via-stone-900/20 to-transparent transition-opacity duration-300 ${
+        <div className={`absolute inset-0 bg-gradient-to-t from-stone-900/60 via-stone-900/20 to-transparent transition-opacity duration-300 ${
           isHovered ? 'opacity-100' : 'opacity-0'
         }`}>
           {/* Quick Action Buttons */}
@@ -177,7 +178,7 @@ const ProductCard = ({
                 "bg-red-500"
               }`}></span>
               {stock}
-              {stockQuantity && (
+              {stockQuantity !== undefined && stockQuantity !== null && (
                 <span className="text-xs opacity-75 ml-1">
                   ({stockQuantity})
                 </span>
@@ -194,13 +195,13 @@ const ProductCard = ({
         </div>
 
         {/* Decorative Corner Accent */}
-        <div className="absolute bottom-0 right-0 w-24 h-24 bg-linear-to-tl from-stone-800/10 to-transparent rounded-tl-full"></div>
+        <div className="absolute bottom-0 right-0 w-24 h-24 bg-gradient-to-tl from-stone-800/10 to-transparent rounded-tl-full"></div>
       </div>
       
       {/* Product Info with Enhanced Styling */}
       <div className="p-6 bg-white relative">
         {/* Decorative Line */}
-        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-linear-to-r from-transparent via-stone-300 to-transparent rounded-full"></div>
+        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-gradient-to-r from-transparent via-stone-300 to-transparent rounded-full"></div>
         
         <div className="mb-4 mt-2">
           <h3 className="text-xl font-bold text-stone-900 mb-1 group-hover:text-stone-700 transition-colors line-clamp-1">
@@ -300,11 +301,11 @@ const ProductCard = ({
       </div>
 
       {/* Shine Effect on Hover */}
-      <div className={`absolute inset-0 bg-linear-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 transition-all duration-700 pointer-events-none ${
+      <div className={`absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 transition-all duration-700 pointer-events-none ${
         isHovered ? 'translate-x-full' : '-translate-x-full'
       }`}></div>
     </div>
   );
 };
 
-export default ProductCard;
+export default ProductCard; 

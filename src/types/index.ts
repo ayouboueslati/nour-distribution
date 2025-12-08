@@ -2,7 +2,7 @@
 export interface BaseEntity {
   id: string;
   created_at: string;
-  updated_at: string | null ;
+  updated_at: string | null;
 }
 
 // Category types
@@ -93,8 +93,8 @@ export interface Product extends BaseEntity {
   supplier?: Supplier;
   
   // Computed properties
-  available_quantity?: number;
-  needs_restock?: boolean;
+  available_quantity: number;
+  needs_restock: boolean;
 }
 
 // Inventory types
@@ -189,7 +189,75 @@ export interface SupplierFormData {
   tags: string[];
 }
 
-// API Response types
+// API Response types - Updated to match actual backend responses
+
+// Products list response (from /products endpoint)
+export interface ProductListResponse {
+  products: Product[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+// Admin products list response (from /products/admin endpoint)
+export interface ProductAdminListResponse {
+  products: Product[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+// Categories list response (array directly)
+export type CategoryListResponse = Category[];
+
+// Suppliers response with stats
+export interface SupplierWithStats extends Supplier {
+  products_count: number;
+  total_stock_value?: number;
+  active_products_count?: number;
+}
+
+export interface SuppliersWithStatsResponse {
+  suppliers: SupplierWithStats[];
+  total: number;
+}
+
+// Inventory responses
+export interface InventoryMovementListResponse {
+  movements: InventoryMovement[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface StockLevelReport {
+  product_id: string;
+  product_name: string;
+  sku: string;
+  current_stock: number;
+  reserved_stock: number;
+  available_stock: number;
+  min_stock_level: number;
+  needs_restock: boolean;
+  category_name: string;
+}
+
+export interface LowStockAlert {
+  product_id: string;
+  product_name: string;
+  sku: string;
+  current_stock: number;
+  min_stock_level: number;
+  category_name: string;
+  supplier_name: string;
+}
+
+export interface LowStockAlertsResponse {
+  low_stock_products: LowStockAlert[];
+  total: number;
+}
+
+// Generic paginated response for compatibility
 export interface PaginatedResponse<T> {
   data: T[];
   total: number;
@@ -197,8 +265,16 @@ export interface PaginatedResponse<T> {
   page_size: number;
 }
 
+// Generic API response wrapper
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
   message?: string;
+}
+
+// Stock update request
+export interface StockUpdateRequest {
+  quantity: number;
+  reason: string;
+  notes?: string;
 }

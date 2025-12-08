@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Card, Button, Input, Badge, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../../components/ui';
 
 // Import the types - fix the path
-import type { B2CClient, B2BClient, Client } from '../../../types/client';
+import type { B2CClient, B2BClient, Client } from '../../../../types/client';
 
 // Mock data
 const b2cClients: B2CClient[] = [

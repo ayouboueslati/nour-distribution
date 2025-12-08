@@ -1,4 +1,5 @@
 const API_BASE_URL = 'http://localhost:8000/api/v1';
+import { notificationService } from "./notifications";
 
 class ApiService {
   private async request(endpoint: string, options: RequestInit = {}) {
@@ -27,40 +28,110 @@ class ApiService {
       if (response.status === 401) {
         // Token expired or invalid
         localStorage.removeItem('access_token');
+        
+        notificationService.warning(
+          'Session expirée',
+          'Votre session a expiré. Veuillez vous reconnecter.'
+        );
+        
         window.location.href = '/admin/login';
         throw new Error('Authentication required');
       }
 
+      if (response.status === 403) {
+        const errorData = await response.json().catch(() => null);
+        
+        // Parse permission error
+        if (errorData?.detail) {
+          let errorMessage = errorData.detail;
+          let requiredRoles = '';
+          let userRole = '';
+          
+          // Extract roles from error message if present
+          const roleMatch = errorMessage.match(/Rôles requis:\s*(.+?)\.\s*Votre rôle:\s*(.+)/);
+          if (roleMatch) {
+            requiredRoles = roleMatch[1];
+            userRole = roleMatch[2];
+            errorMessage = 'Permission insuffisante pour cette action';
+          }
+          
+          // Show permission error with modal
+          notificationService.permissionError(
+            'Accès refusé',
+            errorMessage,
+            requiredRoles,
+            userRole
+          );
+        } else {
+          notificationService.error(
+            'Accès refusé',
+            'Vous n\'avez pas les permissions nécessaires'
+          );
+        }
+        
+        throw new Error('PERMISSION_DENIED');
+      }
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
-        console.error(`Àpi error details:`, errorData);
+        console.error(`Api error details:`, errorData);
 
-        //FOR 422 errors
-        if (response.status == 422 && errorData?.detail){
+        // Handle 422 validation errors
+        if (response.status === 422 && errorData?.detail) {
           const validationErrors = Array.isArray(errorData.detail)
-          ? errorData.detail.map((err: any) => `${err.loc?.[1] || '$field'}: ${err.msg}`).join(', ')
-          :errorData.detail;
-            throw new Error(`Validation Error: ${validationErrors}`);
+            ? errorData.detail.map((err: any) => `${err.loc?.[1] || '$field'}: ${err.msg}`).join(', ')
+            : errorData.detail;
+            
+          notificationService.error(
+            'Erreur de validation',
+            validationErrors
+          );
+          
+          throw new Error(`Validation Error: ${validationErrors}`);
         }
-              throw new Error(errorData?.detail || `Request failed with status ${response.status}`);
-
+        
+        // Generic error
+        const errorMessage = errorData?.detail || errorData?.message || `Erreur ${response.status}`;
+        notificationService.error(
+          'Erreur',
+          errorMessage
+        );
+        
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
       console.log(`✅ API Success: ${endpoint}`, data);
       return data;
-    } catch (error) {
-      console.error(`💥 API Error: ${endpoint}`, error);
+    } catch (error: any) {
+      // Don't show notification for permission denied (already shown above)
+      if (error.message !== 'PERMISSION_DENIED') {
+        // Only show generic error if not already handled
+        if (!error.message?.startsWith('Validation Error:')) {
+          console.error(`💥 API Error: ${endpoint}`, error);
+        }
+      }
       throw error;
     }
   }
 
   // ============ AUTHENTICATION METHODS ============
   async login(email: string, password: string) {
-    return this.request('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const result = await this.request('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+      
+      notificationService.success(
+        'Connexion réussie',
+        'Bienvenue sur votre espace d\'administration'
+      );
+      
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   // ============ USER MANAGEMENT METHODS ============
@@ -77,49 +148,115 @@ class ApiService {
     return this.request(`/admin/users?${params}`);
   }
 
-async getUser(userId: string) {
-  console.log('🔍 ApiService: Getting user with ID:', userId);
-  const result = await this.request(`/admin/users/${userId}`);
-  console.log('🔍 ApiService: Got user result:', result);
-  return result;
-}
+  async getUser(userId: string) {
+    console.log('🔍 ApiService: Getting user with ID:', userId);
+    const result = await this.request(`/admin/users/${userId}`);
+    console.log('🔍 ApiService: Got user result:', result);
+    return result;
+  }
 
   async createUser(userData: any) {
-    return this.request('/admin/users', {
-      method: 'POST',
-      body: JSON.stringify(userData),
-    });
+    try {
+      const result = await this.request('/admin/users', {
+        method: 'POST',
+        body: JSON.stringify(userData),
+      });
+      
+      notificationService.success(
+        'Utilisateur créé',
+        'L\'utilisateur a été créé avec succès'
+      );
+      
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async updateUser(userId: string, userData: any) {
-    return this.request(`/admin/users/${userId}`, {
-      method: 'PUT',
-      body: JSON.stringify(userData),
-    });
+    try {
+      const result = await this.request(`/admin/users/${userId}`, {
+        method: 'PUT',
+        body: JSON.stringify(userData),
+      });
+      
+      notificationService.success(
+        'Utilisateur mis à jour',
+        'Les modifications ont été enregistrées'
+      );
+      
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async deactivateUser(userId: string) {
-    return this.request(`/admin/users/${userId}/deactivate`, {
-      method: 'POST',
-    });
+    try {
+      const result = await this.request(`/admin/users/${userId}/deactivate`, {
+        method: 'POST',
+      });
+      
+      notificationService.success(
+        'Utilisateur désactivé',
+        'L\'utilisateur a été désactivé avec succès'
+      );
+      
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async activateUser(userId: string) {
-    return this.request(`/admin/users/${userId}/activate`, {
-      method: 'POST',
-    });
+    try {
+      const result = await this.request(`/admin/users/${userId}/activate`, {
+        method: 'POST',
+      });
+      
+      notificationService.success(
+        'Utilisateur activé',
+        'L\'utilisateur a été activé avec succès'
+      );
+      
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async deleteUser(userId: string) {
-    return this.request(`/admin/users/${userId}`, {
-      method: 'DELETE',
-    });
+    try {
+      const result = await this.request(`/admin/users/${userId}`, {
+        method: 'DELETE',
+      });
+      
+      notificationService.success(
+        'Utilisateur supprimé',
+        'L\'utilisateur a été supprimé définitivement'
+      );
+      
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async resetUserPassword(userId: string) {
-    return this.request(`/admin/users/${userId}/reset-password`, {
-      method: 'POST',
-    });
+    try {
+      const result = await this.request(`/admin/users/${userId}/reset-password`, {
+        method: 'POST',
+      });
+      
+      notificationService.success(
+        'Mot de passe réinitialisé',
+        'Le nouveau mot de passe a été envoyé à l\'utilisateur'
+      );
+      
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async generatePassword() {
@@ -132,17 +269,39 @@ async getUser(userId: string) {
   }
 
   async updateUserProfile(profileData: any) {
-    return this.request('/profile/me', {
-      method: 'PUT',
-      body: JSON.stringify(profileData),
-    });
+    try {
+      const result = await this.request('/profile/me', {
+        method: 'PUT',
+        body: JSON.stringify(profileData),
+      });
+      
+      notificationService.success(
+        'Profil mis à jour',
+        'Vos informations ont été mises à jour avec succès'
+      );
+      
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async changePassword(passwordData: any) {
-    return this.request('/profile/me/change-password', {
-      method: 'POST',
-      body: JSON.stringify(passwordData),
-    });
+    try {
+      const result = await this.request('/profile/me/change-password', {
+        method: 'POST',
+        body: JSON.stringify(passwordData),
+      });
+      
+      notificationService.success(
+        'Mot de passe modifié',
+        'Votre mot de passe a été changé avec succès'
+      );
+      
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async getUserStats() {
@@ -155,23 +314,56 @@ async getUser(userId: string) {
   }
 
   async createCategory(categoryData: any) {
-    return this.request('/categories', {
-      method: 'POST',
-      body: JSON.stringify(categoryData),
-    });
+    try {
+      const result = await this.request('/categories', {
+        method: 'POST',
+        body: JSON.stringify(categoryData),
+      });
+      
+      notificationService.success(
+        'Catégorie créée',
+        'La catégorie a été créée avec succès'
+      );
+      
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async updateCategory(categoryId: string, categoryData: any) {
-    return this.request(`/categories/${categoryId}`, {
-      method: 'PUT',
-      body: JSON.stringify(categoryData),
-    });
+    try {
+      const result = await this.request(`/categories/${categoryId}`, {
+        method: 'PUT',
+        body: JSON.stringify(categoryData),
+      });
+      
+      notificationService.success(
+        'Catégorie mise à jour',
+        'Les modifications ont été enregistrées'
+      );
+      
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async deleteCategory(categoryId: string) {
-    return this.request(`/categories/${categoryId}`, {
-      method: 'DELETE',
-    });
+    try {
+      const result = await this.request(`/categories/${categoryId}`, {
+        method: 'DELETE',
+      });
+      
+      notificationService.success(
+        'Catégorie supprimée',
+        'La catégorie a été supprimée avec succès'
+      );
+      
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   // ============ PRODUCT MANAGEMENT METHODS ============
@@ -200,30 +392,74 @@ async getUser(userId: string) {
   }
 
   async createProduct(productData: any) {
-    return this.request('/products', {
-      method: 'POST',
-      body: JSON.stringify(productData),
-    });
+    try {
+      const result = await this.request('/products', {
+        method: 'POST',
+        body: JSON.stringify(productData),
+      });
+      
+      notificationService.success(
+        'Produit créé',
+        'Le produit a été ajouté au catalogue'
+      );
+      
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async updateProduct(productId: string, productData: any) {
-    return this.request(`/products/${productId}`, {
-      method: 'PUT',
-      body: JSON.stringify(productData),
-    });
+    try {
+      const result = await this.request(`/products/${productId}`, {
+        method: 'PUT',
+        body: JSON.stringify(productData),
+      });
+      
+      notificationService.success(
+        'Produit mis à jour',
+        'Les modifications ont été enregistrées'
+      );
+      
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async deleteProduct(productId: string) {
-    return this.request(`/products/${productId}`, {
-      method: 'DELETE',
-    });
+    try {
+      const result = await this.request(`/products/${productId}`, {
+        method: 'DELETE',
+      });
+      
+      notificationService.success(
+        'Produit supprimé',
+        'Le produit a été retiré du catalogue'
+      );
+      
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async updateProductStock(productId: string, stockData: any) {
-    return this.request(`/products/${productId}/stock`, {
-      method: 'PATCH',
-      body: JSON.stringify(stockData),
-    });
+    try {
+      const result = await this.request(`/products/${productId}/stock`, {
+        method: 'PATCH',
+        body: JSON.stringify(stockData),
+      });
+      
+      notificationService.success(
+        'Stock mis à jour',
+        'Le niveau de stock a été modifié'
+      );
+      
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async getLowStockProducts() {
@@ -262,23 +498,56 @@ async getUser(userId: string) {
   }
 
   async createSupplier(supplierData: any) {
-    return this.request('/suppliers', {
-      method: 'POST',
-      body: JSON.stringify(supplierData),
-    });
+    try {
+      const result = await this.request('/suppliers', {
+        method: 'POST',
+        body: JSON.stringify(supplierData),
+      });
+      
+      notificationService.success(
+        'Fournisseur créé',
+        'Le fournisseur a été ajouté avec succès'
+      );
+      
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async updateSupplier(supplierId: string, supplierData: any) {
-    return this.request(`/suppliers/${supplierId}`, {
-      method: 'PUT',
-      body: JSON.stringify(supplierData),
-    });
+    try {
+      const result = await this.request(`/suppliers/${supplierId}`, {
+        method: 'PUT',
+        body: JSON.stringify(supplierData),
+      });
+      
+      notificationService.success(
+        'Fournisseur mis à jour',
+        'Les informations ont été modifiées'
+      );
+      
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async deleteSupplier(supplierId: string) {
-    return this.request(`/suppliers/${supplierId}`, {
-      method: 'DELETE',
-    });
+    try {
+      const result = await this.request(`/suppliers/${supplierId}`, {
+        method: 'DELETE',
+      });
+      
+      notificationService.success(
+        'Fournisseur supprimé',
+        'Le fournisseur a été retiré de la liste'
+      );
+      
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async getSuppliersWithStats() {
@@ -321,10 +590,21 @@ async getUser(userId: string) {
   }
 
   async createOrder(orderData: any) {
-    return this.request('/orders', {
-      method: 'POST',
-      body: JSON.stringify(orderData),
-    });
+    try {
+      const result = await this.request('/orders', {
+        method: 'POST',
+        body: JSON.stringify(orderData),
+      });
+      
+      notificationService.success(
+        'Commande créée',
+        'La commande a été enregistrée avec succès'
+      );
+      
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 }
 

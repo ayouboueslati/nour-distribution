@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiService } from '../lib/api';
-
+import { notificationService } from '../lib/notifications';
 interface User {
   id: string;
   email: string;
@@ -67,31 +67,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    console.log('🔐 Login attempt for:', email);
+ // Update your AuthContext login method
+const login = async (email: string, password: string): Promise<boolean> => {
+  console.log('🔐 Login attempt for:', email);
+  
+  try {
+    const data = await apiService.login(email, password);
+    console.log('✅ Login successful, token received');
+    localStorage.setItem('access_token', data.access_token);
+
+    // Get user data
+    const userData = await apiService.getCurrentUser();
+    console.log('👤 User data retrieved:', userData.email);
+    setUser(userData);
     
-    try {
-      const data = await apiService.login(email, password);
-      console.log('✅ Login successful, token received');
-      localStorage.setItem('access_token', data.access_token);
-
-      // Get user data using the API service
-      const userData = await apiService.getCurrentUser();
-      console.log('👤 User data retrieved:', userData.email);
-      setUser(userData);
-      return true;
-    } catch (error) {
-      console.error('💥 Login failed:', error);
-      return false;
+    // Show success notification
+    notificationService.success(
+      'Connexion réussie',
+      `Bienvenue ${userData.full_name || userData.email}!`
+    );
+    return true;
+  } catch (error: any) {
+    console.error('💥 Login failed:', error);
+    
+    // Show error notification
+    if (error.message.includes('401')) {
+      notificationService.error(
+        'Échec de connexion',
+        'Email ou mot de passe incorrect'
+      );
+    } else {
+      notificationService.error(
+        'Erreur de connexion',
+        error.message || 'Impossible de se connecter'
+      );
     }
-  };
+    return false;
+  }
+};
 
-  const logout = () => {
-    console.log('🚪 Logging out user');
-    localStorage.removeItem('access_token');
-    setUser(null);
-    router.push('/admin/login');
-  };
+// And logout method
+const logout = () => {
+  console.log('🚪 Logging out user');
+  localStorage.removeItem('access_token');
+  setUser(null);
+  
+  // Show notification
+  notificationService.info(
+    'Déconnexion',
+    'Vous avez été déconnecté avec succès'
+  );
+  
+  router.push('/admin/login');
+};
 
   const value: AuthContextType = {
     user,

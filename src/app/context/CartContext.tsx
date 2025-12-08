@@ -1,9 +1,9 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface CartItem {
-  id: number;
+  id: string; // ✅ Already string, perfect!
   name: string;
   category: string;
   price: number;
@@ -15,8 +15,8 @@ interface CartItem {
 interface CartContextType {
   cartItems: CartItem[];
   addToCart: (product: Omit<CartItem, 'quantity'>, quantity: number) => void;
-  updateQuantity: (id: number, quantity: number) => void;
-  removeFromCart: (id: number) => void;
+  updateQuantity: (id: string, quantity: number) => void; // ✅ Changed from number to string
+  removeFromCart: (id: string) => void; // ✅ Changed from number to string
   clearCart: () => void;
   totalItems: number;
 }
@@ -25,6 +25,27 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+
+  // ✅ Load cart from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedCart = localStorage.getItem('nour_cart');
+      if (savedCart) {
+        try {
+          setCartItems(JSON.parse(savedCart));
+        } catch (error) {
+          console.error('Error loading cart from localStorage:', error);
+        }
+      }
+    }
+  }, []);
+
+  // ✅ Save cart to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('nour_cart', JSON.stringify(cartItems));
+    }
+  }, [cartItems]);
 
   const addToCart = (product: Omit<CartItem, 'quantity'>, quantity: number) => {
     setCartItems(prev => {
@@ -42,7 +63,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   };
 
-  const updateQuantity = (id: number, quantity: number) => {
+  const updateQuantity = (id: string, quantity: number) => { // ✅ Changed parameter type
     if (quantity < 1) return;
     
     setCartItems(prev =>
@@ -54,7 +75,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     );
   };
 
-  const removeFromCart = (id: number) => {
+  const removeFromCart = (id: string) => { // ✅ Changed parameter type
     setCartItems(prev => prev.filter(item => item.id !== id));
   };
 
