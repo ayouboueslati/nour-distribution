@@ -5,21 +5,23 @@ import { AlertCircle } from 'lucide-react';
 
 interface InputProps {
   label?: string;
+  name?: string;
   type?: string;
   placeholder?: string;
-  value: string | number; 
+  value: string | number;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   error?: string;
   required?: boolean;
   disabled?: boolean;
   helpText?: string;
-  step?: string;  
+  step?: string;
   className?: string;
   min?: string | number;
 }
 
 export const Input: React.FC<InputProps> = ({
   label,
+  name,
   type = 'text',
   placeholder,
   value,
@@ -29,7 +31,7 @@ export const Input: React.FC<InputProps> = ({
   required = false,
   disabled = false,
   helpText,
-  step,           
+  step,
   className = ''
 }) => {
   return (
@@ -41,6 +43,7 @@ export const Input: React.FC<InputProps> = ({
         </label>
       )}
       <input
+        name={name}
         type={type}
         value={value}
         step={step}

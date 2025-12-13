@@ -10,7 +10,7 @@ export default function SuppliersPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -33,7 +33,7 @@ export default function SuppliersPage() {
 
   const filteredSuppliers = suppliers.filter(supplier =>
     supplier.company_name.toLowerCase().includes(search.toLowerCase()) &&
-    (statusFilter === 'all' || 
+    (statusFilter === 'all' ||
       (statusFilter === 'active' && supplier.is_active) ||
       (statusFilter === 'inactive' && !supplier.is_active)
     ) &&
@@ -59,8 +59,48 @@ export default function SuppliersPage() {
 
   if (loading) {
     return (
-      <div className="p-6 flex justify-center items-center min-h-96">
-        <div className="text-stone-600">Chargement des fournisseurs...</div>
+      <div className="p-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <div className="h-8 w-72 bg-stone-200 rounded skeleton mb-2"></div>
+            <div className="h-4 w-56 bg-stone-200 rounded skeleton"></div>
+          </div>
+          <div className="h-10 w-48 bg-stone-200 rounded-lg skeleton"></div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-xl border border-stone-200 p-6 animate-pulse" style={{ animationDelay: `${i * 75}ms` }}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="h-4 bg-stone-200 rounded w-1/2 skeleton"></div>
+                <div className="w-10 h-10 bg-stone-200 rounded-lg skeleton"></div>
+              </div>
+              <div className="h-8 bg-stone-200 rounded w-1/3 skeleton"></div>
+            </div>
+          ))}
+        </div>
+
+        <div className="bg-white rounded-xl border border-stone-200 p-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-10 bg-stone-200 rounded skeleton"></div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
+          <div className="divide-y divide-stone-100">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="p-4 animate-pulse" style={{ animationDelay: `${i * 50}ms` }}>
+                <div className="grid grid-cols-8 gap-4">
+                  {Array.from({ length: 8 }).map((_, j) => (
+                    <div key={j} className="h-4 bg-stone-200 rounded skeleton"></div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -120,7 +160,7 @@ export default function SuppliersPage() {
                 { value: 'preferred', label: 'Préférés seulement' }
               ]}
               value="all"
-              onChange={() => {}}
+              onChange={() => { }}
             />
           </div>
         </div>
@@ -185,8 +225,8 @@ export default function SuppliersPage() {
                     <span className="text-sm text-stone-600">{supplier.lead_time_days} jours</span>
                   </TableCell>
                   <TableCell>
-                    <Badge 
-                      variant={supplier.is_active ? 'success' : 'default'} 
+                    <Badge
+                      variant={supplier.is_active ? 'success' : 'default'}
                       size="sm"
                     >
                       {supplier.is_active ? 'Actif' : 'Inactif'}
@@ -223,7 +263,7 @@ export default function SuppliersPage() {
             <div className="text-center py-12">
               <div className="text-stone-400 text-lg">Aucun fournisseur trouvé</div>
               <p className="text-stone-500 mt-2">
-                {search || statusFilter !== 'all' 
+                {search || statusFilter !== 'all'
                   ? 'Ajustez vos filtres pour voir plus de résultats'
                   : 'Commencez par ajouter votre premier fournisseur'
                 }
@@ -241,15 +281,15 @@ export default function SuppliersPage() {
   );
 }
 
-function StatCard({ 
-  title, 
-  value, 
-  icon, 
-  variant = 'default' 
-}: { 
-  title: string; 
-  value: string; 
-  icon: string; 
+function StatCard({
+  title,
+  value,
+  icon,
+  variant = 'default'
+}: {
+  title: string;
+  value: string;
+  icon: string;
   variant?: 'default' | 'success' | 'warning' | 'info';
 }) {
   const variantStyles = {

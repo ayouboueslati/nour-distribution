@@ -5,26 +5,30 @@ import { useRouter } from 'next/navigation';
 import { ShoppingCart, Trash2, Plus, Minus, ArrowLeft, Shield, Truck, Lock } from 'lucide-react';
 import Link from 'next/link';
 import { useCart } from '../../context/CartContext';
+import { Modal } from '../../components/ui/Modal';
+import CheckoutForm from '../../components/features/CheckoutForm';
 
 export default function CartPage() {
   const router = useRouter();
   const { cartItems, updateQuantity, removeFromCart, clearCart, totalItems } = useCart();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
-  // Calculate totals
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const shippingFee = subtotal > 200 ? 0 : 25;
-  const tax = subtotal * 0.1;
-  const total = subtotal + shippingFee + tax;
+  // Calculate totals - Prices are hidden for guests
+  // const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  // const shippingFee = subtotal > 200 ? 0 : 25;
+  // const tax = subtotal * 0.1;
+  // const total = subtotal + shippingFee + tax;
 
   const handleCheckout = () => {
     setIsCheckingOut(true);
-    setTimeout(() => {
-      alert('Commande soumise avec succès! Notre équipe vous contactera pour finaliser les prix.');
-      setIsCheckingOut(false);
-      clearCart();
-    }, 2000);
   };
+
+  const handleCheckoutSuccess = () => {
+    setIsCheckingOut(false);
+    clearCart();
+    router.push('/order-confirmation'); // We'll create this next
+  };
+
   if (cartItems.length === 0) {
     return (
       <div className="min-h-screen bg-stone-50">
@@ -83,7 +87,7 @@ export default function CartPage() {
       {/* Cart Content */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
-          
+
           {/* Cart Items */}
           <div className="lg:w-2/3">
             <div className="bg-white rounded-2xl border border-stone-200 shadow-sm">
@@ -145,11 +149,11 @@ export default function CartPage() {
                               >
                                 <Minus className="w-4 h-4" />
                               </button>
-                              
+
                               <span className="w-12 text-center text-stone-900 font-medium">
                                 {item.quantity}
                               </span>
-                              
+
                               <button
                                 onClick={() => updateQuantity(item.id, item.quantity + 1)}
                                 disabled={item.quantity >= item.stock}
@@ -212,12 +216,12 @@ export default function CartPage() {
                     <span>Articles ({totalItems})</span>
                     <span>Prix sur devis</span>
                   </div>
-                  
+
                   <div className="flex justify-between text-stone-600">
                     <span>Frais d'expédition</span>
-                    <span>{shippingFee === 0 ? 'Gratuit' : `${shippingFee}€`}</span>
+                    <span>Calculé après devis</span>
                   </div>
-                  
+
                   <div className="flex justify-between text-stone-600">
                     <span>Taxes</span>
                     <span>Incluses</span>
@@ -240,7 +244,7 @@ export default function CartPage() {
                         Prix B2B Professionnels
                       </h4>
                       <p className="text-amber-800 text-xs">
-                        Les prix définitifs seront confirmés par notre équipe après validation de votre commande. 
+                        Les prix définitifs seront confirmés par notre équipe après validation de votre commande.
                         Vous recevrez un devis personnalisé sous 24h.
                       </p>
                     </div>
@@ -307,6 +311,19 @@ export default function CartPage() {
           </div>
         </div>
       </section>
-    </div>
+
+      {/* Checkout Modal */}
+      <Modal
+        isOpen={isCheckingOut}
+        onClose={() => setIsCheckingOut(false)}
+        title="Finaliser la commande"
+        size="lg"
+      >
+        <CheckoutForm
+          onSuccess={handleCheckoutSuccess}
+          onCancel={() => setIsCheckingOut(false)}
+        />
+      </Modal>
+    </div >
   );
 }

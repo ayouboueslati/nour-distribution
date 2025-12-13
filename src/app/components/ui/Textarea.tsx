@@ -6,6 +6,7 @@ import { AlertCircle } from 'lucide-react';
 
 interface TextareaProps {
   label?: string;
+  name?: string;
   placeholder?: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
@@ -18,6 +19,7 @@ interface TextareaProps {
 
 export const Textarea: React.FC<TextareaProps> = ({
   label,
+  name,
   placeholder,
   value,
   onChange,
@@ -36,6 +38,7 @@ export const Textarea: React.FC<TextareaProps> = ({
         </label>
       )}
       <textarea
+        name={name}
         value={value}
         onChange={onChange}
         placeholder={placeholder}

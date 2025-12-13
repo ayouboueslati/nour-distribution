@@ -10,6 +10,7 @@ import {
   Shield,
   Lock,
 } from 'lucide-react';
+import { notificationStore } from './NotificationStore';
 
 export type NotificationType = 'success' | 'error' | 'warning' | 'info' | 'permission';
 
@@ -34,8 +35,8 @@ interface NotificationContextType {
   showWarning: (title: string, message: string, duration?: number) => void;
   showInfo: (title: string, message: string, duration?: number) => void;
   showPermissionError: (
-    title: string, 
-    message: string, 
+    title: string,
+    message: string,
     requiredRoles?: string,
     userRole?: string
   ) => void;
@@ -81,11 +82,19 @@ class NotificationService {
     const id = generateUniqueId();
     const fullNotification: Notification = {
       id,
-      duration: 5000, // Default 5 seconds
+      duration: 20000, // Default 20 seconds
       ...notification,
     };
-    
+
     this.emit(fullNotification);
+
+    // Also store in NotificationStore for persistence
+    notificationStore.add({
+      id,
+      type: fullNotification.type,
+      title: fullNotification.title,
+      message: fullNotification.message,
+    });
   }
 
   static success(title: string, message: string, duration?: number) {
@@ -129,8 +138,8 @@ class NotificationService {
   }
 
   static permissionError(
-    title: string, 
-    message: string, 
+    title: string,
+    message: string,
     requiredRoles?: string,
     userRole?: string
   ) {
@@ -168,11 +177,20 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     const id = generateUniqueId();
     const newNotification: Notification = {
       id,
-      duration: 5000,
+      duration: 20000, // Default 20 seconds
       ...notification,
     };
 
     setNotifications(prev => [newNotification, ...prev]);
+
+    // Store in NotificationStore for persistence
+    notificationStore.add({
+      id,
+      type: newNotification.type,
+      title: newNotification.title,
+      message: newNotification.message,
+      dismissedAt: newNotification.duration ? Date.now() + newNotification.duration : undefined,
+    });
 
     // Auto-dismiss if duration is set
     if (newNotification.duration) {
@@ -342,7 +360,7 @@ function NotificationToast({ notification, onDismiss }: NotificationToastProps) 
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-sm mb-1">{notification.title}</h3>
           <p className="text-sm opacity-90">{notification.message}</p>
-          
+
           {/* Action Button */}
           {notification.action && (
             <button

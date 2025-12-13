@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAuth = async () => {
     console.log('🔄 Starting authentication check...');
-    
+
     // Client-side only
     if (typeof window === 'undefined') {
       console.log('🚫 Server-side rendering, skipping auth check');
@@ -55,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       console.log('🌐 Making API call to verify token...');
-      const userData = await apiService.getCurrentUser();
+      const userData = await apiService.getCurrentUser({ skipGlobalErrorHandler: true });
       console.log('✅ User authenticated:', userData.email);
       setUser(userData);
     } catch (error) {
@@ -67,59 +67,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
- // Update your AuthContext login method
-const login = async (email: string, password: string): Promise<boolean> => {
-  console.log('🔐 Login attempt for:', email);
-  
-  try {
-    const data = await apiService.login(email, password);
-    console.log('✅ Login successful, token received');
-    localStorage.setItem('access_token', data.access_token);
+  // Update your AuthContext login method
+  const login = async (email: string, password: string): Promise<boolean> => {
+    console.log('🔐 Login attempt for:', email);
 
-    // Get user data
-    const userData = await apiService.getCurrentUser();
-    console.log('👤 User data retrieved:', userData.email);
-    setUser(userData);
-    
-    // Show success notification
-    notificationService.success(
-      'Connexion réussie',
-      `Bienvenue ${userData.full_name || userData.email}!`
-    );
-    return true;
-  } catch (error: any) {
-    console.error('💥 Login failed:', error);
-    
-    // Show error notification
-    if (error.message.includes('401')) {
-      notificationService.error(
-        'Échec de connexion',
-        'Email ou mot de passe incorrect'
+    try {
+      const data = await apiService.login(email, password);
+      console.log('✅ Login successful, token received');
+      localStorage.setItem('access_token', data.access_token);
+
+      // Get user data
+      const userData = await apiService.getCurrentUser();
+      console.log('👤 User data retrieved:', userData.email);
+      setUser(userData);
+
+      // Show success notification
+      notificationService.success(
+        'Connexion réussie',
+        `Bienvenue ${userData.full_name || userData.email}!`
       );
-    } else {
-      notificationService.error(
-        'Erreur de connexion',
-        error.message || 'Impossible de se connecter'
-      );
+      return true;
+    } catch (error: any) {
+      console.error('💥 Login failed:', error);
+
+      // Show error notification
+      if (error.message.includes('401')) {
+        notificationService.error(
+          'Échec de connexion',
+          'Email ou mot de passe incorrect'
+        );
+      } else {
+        notificationService.error(
+          'Erreur de connexion',
+          error.message || 'Impossible de se connecter'
+        );
+      }
+      return false;
     }
-    return false;
-  }
-};
+  };
 
-// And logout method
-const logout = () => {
-  console.log('🚪 Logging out user');
-  localStorage.removeItem('access_token');
-  setUser(null);
-  
-  // Show notification
-  notificationService.info(
-    'Déconnexion',
-    'Vous avez été déconnecté avec succès'
-  );
-  
-  router.push('/admin/login');
-};
+  // And logout method
+  const logout = () => {
+    console.log('🚪 Logging out user');
+    localStorage.removeItem('access_token');
+    setUser(null);
+
+    // Show notification
+    notificationService.info(
+      'Déconnexion',
+      'Vous avez été déconnecté avec succès'
+    );
+
+    router.push('/admin/login');
+  };
 
   const value: AuthContextType = {
     user,
@@ -129,10 +129,10 @@ const logout = () => {
     isAuthenticated: !!user,
   };
 
-  console.log('🎯 AuthProvider value:', { 
-    user: user?.email, 
-    isLoading, 
-    isAuthenticated: !!user 
+  console.log('🎯 AuthProvider value:', {
+    user: user?.email,
+    isLoading,
+    isAuthenticated: !!user
   });
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

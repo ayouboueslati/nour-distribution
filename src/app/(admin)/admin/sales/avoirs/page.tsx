@@ -1,73 +1,119 @@
-// frontend/src/app/(admin)/admin/sales/avoirs/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Card } from '../../../../components/ui/Card';
 import { Button } from '../../../../components/ui/Button';
 import { Input } from '../../../../components/ui/Input';
 import { Select } from '../../../../components/ui/Select';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../../../components/ui/Table';
-
-// Mock data for avoirs
-const avoirsData = [
-  { 
-    id: 'AVO-001', 
-    client: 'Sarah Beauty', 
-    factureId: 'FAC-001',
-    montant: '120€',
-    raison: 'Retour produit',
-    statut: 'Utilisé',
-    dateCreation: '2025-01-25',
-    dateExpiration: '2025-07-25'
-  },
-  { 
-    id: 'AVO-002', 
-    client: 'Institut Afro', 
-    factureId: 'FAC-002',
-    montant: '245€',
-    raison: 'Erreur de prix',
-    statut: 'Disponible',
-    dateCreation: '2025-01-20',
-    dateExpiration: '2025-07-20'
-  },
-  { 
-    id: 'AVO-003', 
-    client: 'Coiffure Élégance', 
-    factureId: 'FAC-003',
-    montant: '90€',
-    raison: 'Remise commerciale',
-    statut: 'Expiré',
-    dateCreation: '2024-12-15',
-    dateExpiration: '2024-06-15'
-  },
-];
+import { apiService } from '../../../../lib/api';
 
 export default function AvoirsPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [avoirsList, setAvoirsList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    total: 0,
+    totalAmount: 0
+  });
 
-  const filteredAvoirs = avoirsData.filter(avoir => 
-    avoir.client.toLowerCase().includes(search.toLowerCase()) &&
-    (statusFilter === 'all' || avoir.statut === statusFilter)
+  useEffect(() => {
+    loadAvoirs();
+  }, [statusFilter]);
+
+  const loadAvoirs = async () => {
+    try {
+      setLoading(true);
+      const params: any = {};
+
+      const response = await apiService.getAvoirs(params);
+      const avoirsData = response.documents || response;
+      setAvoirsList(avoirsData);
+      
+      // Calculate stats
+      const totalAmount = avoirsData.reduce((sum: number, a: any) => sum + (a.total_amount || 0), 0);
+
+      setStats({
+        total: avoirsData.length,
+        totalAmount: totalAmount
+      });
+    } catch (error) {
+      console.error('Error loading avoirs:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownloadPDF = async (avoirId: string) => {
+    try {
+      window.open(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/documents/avoirs/${avoirId}/pdf`, '_blank');
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+    }
+  };
+
+  const filteredAvoirs = avoirsList.filter(avoir => 
+    avoir.client?.company_name?.toLowerCase().includes(search.toLowerCase()) ||
+    avoir.client?.first_name?.toLowerCase().includes(search.toLowerCase()) ||
+    avoir.client?.last_name?.toLowerCase().includes(search.toLowerCase()) ||
+    avoir.document_number?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const getStatusColor = (statut: string) => {
-    switch (statut) {
-      case 'Disponible': return 'bg-green-100 text-green-800';
-      case 'Utilisé': return 'bg-blue-100 text-blue-800';
-      case 'Expiré': return 'bg-red-100 text-red-800';
-      case 'Annulé': return 'bg-stone-100 text-stone-800';
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'en_attente': return 'bg-amber-100 text-amber-800';
+      case 'valide': return 'bg-green-100 text-green-800';
+      case 'annule': return 'bg-red-100 text-red-800';
       default: return 'bg-stone-100 text-stone-800';
     }
   };
 
-  const totalAvoirs = avoirsData.reduce((sum, a) => 
-    sum + parseFloat(a.montant.replace('€', '')), 0
-  );
-  const avoirsDisponibles = avoirsData
-    .filter(a => a.statut === 'Disponible')
-    .reduce((sum, a) => sum + parseFloat(a.montant.replace('€', '')), 0);
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'en_attente': return 'En attente';
+      case 'valide': return 'Validé';
+      case 'annule': return 'Annulé';
+      default: return status;
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    return type === 'b2b' ? 'bg-purple-100 text-purple-800' : 'bg-cyan-100 text-cyan-800';
+  };
+
+  const getTypeLabel = (type: string) => {
+    return type === 'b2b' ? 'B2B' : 'B2C';
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('fr-FR');
+  };
+
+  const formatAmount = (amount: number) => {
+    if (!amount) return '-';
+    return `${amount.toFixed(2)} DT`;
+  };
+
+  const getClientName = (client: any) => {
+    if (!client) return 'Client inconnu';
+    if (client.type === 'b2b') {
+      return client.company_name || 'Entreprise';
+    }
+    return `${client.first_name || ''} ${client.last_name || ''}`.trim() || 'Client';
+  };
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -77,19 +123,14 @@ export default function AvoirsPage() {
           <h1 className="text-3xl font-light text-stone-800">Gestion des Avoirs</h1>
           <p className="text-stone-600 mt-1">Créez et gérez les avoirs et notes de crédit</p>
         </div>
-        <Link href="/admin/sales/avoirs/new">
-          <Button variant="primary">
-            + Nouvel Avoir
-          </Button>
-        </Link>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatCard title="Total Avoirs" value={avoirsData.length.toString()} icon="💳" />
-        <StatCard title="Montant Total" value={`${totalAvoirs}€`} icon="💰" />
-        <StatCard title="Disponibles" value={`${avoirsDisponibles}€`} icon="✅" variant="success" />
-        <StatCard title="Expirés" value="1" icon="⏰" variant="danger" />
+        <StatCard title="Total Avoirs" value={stats.total.toString()} icon="💳" />
+        <StatCard title="Montant Total" value={formatAmount(stats.totalAmount)} icon="💰" />
+        <StatCard title="Ce mois" value="0" icon="📅" variant="info" />
+        <StatCard title="Retours produits" value={stats.total.toString()} icon="📦" variant="warning" />
       </div>
 
       {/* Filters */}
@@ -104,25 +145,19 @@ export default function AvoirsPage() {
             <Select
               options={[
                 { value: 'all', label: 'Tous les statuts' },
-                { value: 'Disponible', label: 'Disponible' },
-                { value: 'Utilisé', label: 'Utilisé' },
-                { value: 'Expiré', label: 'Expiré' },
-                { value: 'Annulé', label: 'Annulé' }
+                { value: 'en_attente', label: 'En attente' },
+                { value: 'valide', label: 'Validé' },
+                { value: 'annule', label: 'Annulé' }
               ]}
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             />
-            <Select
-              options={[
-                { value: 'all', label: 'Toutes les raisons' },
-                { value: 'Retour produit', label: 'Retour produit' },
-                { value: 'Erreur de prix', label: 'Erreur de prix' },
-                { value: 'Remise commerciale', label: 'Remise commerciale' },
-                { value: 'Annulation', label: 'Annulation commande' }
-              ]}
-              value="all"
-              onChange={() => {}}
-            />
+            <button
+              onClick={loadAvoirs}
+              className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+            >
+              🔄 Actualiser
+            </button>
           </div>
         </div>
       </Card>
@@ -135,11 +170,11 @@ export default function AvoirsPage() {
               <TableRow>
                 <TableHead>N° Avoir</TableHead>
                 <TableHead>Client</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead>Facture Liée</TableHead>
                 <TableHead>Montant</TableHead>
                 <TableHead>Raison</TableHead>
                 <TableHead>Création</TableHead>
-                <TableHead>Expiration</TableHead>
                 <TableHead>Statut</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -147,27 +182,33 @@ export default function AvoirsPage() {
             <TableBody>
               {filteredAvoirs.map((avoir) => (
                 <TableRow key={avoir.id}>
-                  <TableCell className="font-medium">{avoir.id}</TableCell>
-                  <TableCell>{avoir.client}</TableCell>
+                  <TableCell className="font-medium">{avoir.document_number}</TableCell>
+                  <TableCell>{getClientName(avoir.client)}</TableCell>
                   <TableCell>
-                    <Link 
-                      href={`/admin/sales/factures/${avoir.factureId}`}
-                      className="text-blue-600 hover:text-blue-700 text-sm"
-                    >
-                      {avoir.factureId}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="font-semibold">{avoir.montant}</TableCell>
-                  <TableCell>{avoir.raison}</TableCell>
-                  <TableCell>{avoir.dateCreation}</TableCell>
-                  <TableCell className={
-                    avoir.statut === 'Expiré' ? 'text-red-600 font-medium' : ''
-                  }>
-                    {avoir.dateExpiration}
+                    <span className={`inline-flex px-2 py-1 text-xs rounded-full ${getTypeColor(avoir.client?.type)}`}>
+                      {getTypeLabel(avoir.client?.type)}
+                    </span>
                   </TableCell>
                   <TableCell>
-                    <span className={`inline-flex px-3 py-1 text-xs rounded-full font-medium ${getStatusColor(avoir.statut)}`}>
-                      {avoir.statut}
+                    {avoir.reference_document ? (
+                      <Link 
+                        href={`/admin/sales/factures/${avoir.reference_document.id}`}
+                        className="text-blue-600 hover:text-blue-700 text-sm"
+                      >
+                        {avoir.reference_document.document_number}
+                      </Link>
+                    ) : (
+                      <span className="text-stone-400 text-sm">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="font-semibold">{formatAmount(avoir.total_amount)}</TableCell>
+                  <TableCell className="max-w-xs truncate">
+                    {avoir.notes?.split('\n')[0] || 'Avoir commercial'}
+                  </TableCell>
+                  <TableCell>{formatDate(avoir.issue_date)}</TableCell>
+                  <TableCell>
+                    <span className={`inline-flex px-3 py-1 text-xs rounded-full font-medium ${getStatusColor(avoir.status)}`}>
+                      {getStatusLabel(avoir.status)}
                     </span>
                   </TableCell>
                   <TableCell>
@@ -178,16 +219,11 @@ export default function AvoirsPage() {
                       >
                         Voir
                       </Link>
-                      {avoir.statut === 'Disponible' && (
-                        <button className="text-green-600 hover:text-green-700 text-sm font-medium">
-                          Utiliser
-                        </button>
-                      )}
-                      <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                      <button 
+                        onClick={() => handleDownloadPDF(avoir.id)}
+                        className="text-green-600 hover:text-green-700 text-sm font-medium"
+                      >
                         PDF
-                      </button>
-                      <button className="text-red-600 hover:text-red-700 text-sm font-medium">
-                        Annuler
                       </button>
                     </div>
                   </TableCell>
@@ -202,16 +238,9 @@ export default function AvoirsPage() {
               <p className="text-stone-500 mt-2">
                 {search || statusFilter !== 'all' 
                   ? 'Ajustez vos filtres pour voir plus de résultats' 
-                  : 'Créez votre premier avoir pour un retour ou une régularisation'
+                  : 'Les avoirs créés pour les retours apparaîtront ici'
                 }
               </p>
-              {(search === '' && statusFilter === 'all') && (
-                <Link href="/admin/sales/avoirs/new" className="inline-block mt-4">
-                  <Button variant="primary">
-                    + Créer un Avoir
-                  </Button>
-                </Link>
-              )}
             </div>
           )}
         </div>
@@ -229,12 +258,13 @@ function StatCard({
   title: string; 
   value: string; 
   icon: string; 
-  variant?: 'default' | 'success' | 'danger';
+  variant?: 'default' | 'success' | 'info' | 'warning';
 }) {
   const variantStyles = {
     default: 'bg-stone-50 border-stone-200',
     success: 'bg-green-50 border-green-200',
-    danger: 'bg-red-50 border-red-200'
+    info: 'bg-blue-50 border-blue-200',
+    warning: 'bg-amber-50 border-amber-200'
   };
 
   return (

@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { LogOut, User, Mail, Circle, Settings } from 'lucide-react';
 import { GlobalPermissionModal } from '../../components/permission/GlobalPermissionModal';
 import { NotificationProvider } from "../../lib/notifications";
+import NotificationCenter from '../../components/ui/NotificationCenter';
 
 
 const navigation = [
@@ -100,17 +101,17 @@ export default function AdminLayout({
   return (
     <div className="flex h-screen bg-stone-50">
       {/* Sidebar */}
-      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-linear-to-b from-white to-stone-50 shadow-2xl transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 border-r border-stone-200`}>
+      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 border-r border-stone-200`}>
         <div className="flex flex-col h-full">
           {/* Enhanced Logo & User Info */}
           <div className="px-4 py-6 border-b border-stone-200 bg-white/80 backdrop-blur-sm">
-            <div className="text-center mb-6">
+            <div className="text-center mb-6 animate-fade-in-down">
               <h1 className="text-2xl font-light text-stone-800 mb-1">Nour</h1>
-              <h2 className="text-lg font-semibold text-amber-600">Distribution</h2>
+              <h2 className="text-lg font-semibold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">Distribution</h2>
             </div>
-            
+
             {/* Enhanced User Card */}
-            <div className="bg-linear-to-r from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-200 shadow-sm">
+            <div className="glass bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-200 shadow-md hover:shadow-lg transition-all duration-300 animate-fade-in-up">
               <div className="flex items-start gap-3">
                 {/* User Avatar with Status */}
                 <div className="relative">
@@ -120,7 +121,7 @@ export default function AdminLayout({
                   {/* Online Status Indicator */}
                   <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full shadow-sm"></div>
                 </div>
-                
+
                 {/* User Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
@@ -128,7 +129,7 @@ export default function AdminLayout({
                       {user?.full_name}
                     </h3>
                   </div>
-                  
+
                   {/* Email */}
                   <div className="flex items-center gap-1 mb-2">
                     <Mail className="w-3 h-3 text-stone-400" />
@@ -136,7 +137,7 @@ export default function AdminLayout({
                       {user?.email}
                     </p>
                   </div>
-                  
+
                   {/* Role Badge */}
                   <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${roleColors[user?.role as keyof typeof roleColors] || roleColors.staff}`}>
                     <Circle className="w-2 h-2 mr-1 fill-current" />
@@ -144,7 +145,7 @@ export default function AdminLayout({
                   </div>
                 </div>
               </div>
-              
+
               {/* Connection Status */}
               <div className="flex items-center justify-between mt-3 pt-3 border-t border-amber-200/50">
                 <div className="flex items-center gap-1">
@@ -152,9 +153,9 @@ export default function AdminLayout({
                   <span className="text-xs text-stone-500">En ligne</span>
                 </div>
                 <span className="text-xs text-stone-400">
-                  {new Date().toLocaleTimeString('fr-FR', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
+                  {new Date().toLocaleTimeString('fr-FR', {
+                    hour: '2-digit',
+                    minute: '2-digit'
                   })}
                 </span>
               </div>
@@ -169,11 +170,10 @@ export default function AdminLayout({
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`flex items-center px-4 py-3 rounded-xl transition-all duration-200 group ${
-                    isActive
-                      ? 'bg-linear-to-r from-amber-500 to-orange-500 text-white shadow-lg transform scale-105'
-                      : 'text-stone-600 hover:bg-amber-50 hover:text-amber-700 hover:shadow-md'
-                  }`}
+                  className={`flex items-center px-4 py-3 rounded-xl transition-all duration-200 group ${isActive
+                    ? 'bg-linear-to-r from-amber-500 to-orange-500 text-white shadow-lg transform scale-105'
+                    : 'text-stone-600 hover:bg-amber-50 hover:text-amber-700 hover:shadow-md'
+                    }`}
                   onClick={() => setSidebarOpen(false)}
                 >
                   <span className={`mr-3 text-lg transition-transform duration-200 ${isActive ? 'transform scale-110' : 'group-hover:scale-110'}`}>
@@ -199,7 +199,7 @@ export default function AdminLayout({
                 <Settings className="w-4 h-4 mr-3" />
                 <span className="text-sm">Paramètres</span>
               </Link>
-              
+
               {/* Logout Button */}
               <button
                 onClick={logout}
@@ -209,7 +209,7 @@ export default function AdminLayout({
                 <span className="text-sm">Déconnexion</span>
               </button>
             </div>
-            
+
             {/* Footer Text */}
             <div className="mt-4 pt-4 border-t border-stone-200/50">
               <p className="text-xs text-center text-stone-400">
@@ -222,7 +222,11 @@ export default function AdminLayout({
       </div>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden relative">
+        {/* Fixed Notification Center - Top Right */}
+        <div className="fixed top-4 right-4 z-[999]">
+          <NotificationCenter />
+        </div>
         {/* Enhanced Mobile header */}
         <header className="bg-white shadow-sm border-b border-stone-200 lg:hidden">
           <div className="flex items-center justify-between h-16 px-4">
@@ -232,8 +236,11 @@ export default function AdminLayout({
             >
               <span className="text-xl">☰</span>
             </button>
-            
+
             <div className="flex items-center gap-2">
+              {/* Notification Center */}
+              <NotificationCenter />
+
               <div className="text-right">
                 <p className="text-sm font-medium text-stone-800">{user?.full_name}</p>
                 <p className="text-xs text-stone-500">{user?.email}</p>
@@ -254,7 +261,7 @@ export default function AdminLayout({
         )}
 
         {/* Page content */}
-        <main className="flex-1 overflow-auto bg-linear-to-br from-stone-50/50 to-amber-50/30">
+        <main className="flex-1 overflow-auto bg-stone-50">
           {children}
         </main>
       </div>

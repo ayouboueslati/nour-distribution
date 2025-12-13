@@ -10,7 +10,7 @@ import { Product, Category, ProductListResponse } from '../../../types';
 export default function ProductsPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    
+
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
@@ -20,7 +20,7 @@ export default function ProductsPage() {
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string>('');
-    
+
     // Pagination
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [totalProducts, setTotalProducts] = useState<number>(0);
@@ -74,7 +74,7 @@ export default function ProductsPage() {
     const fetchProducts = async () => {
         setLoading(true);
         setError('');
-        
+
         try {
             const params: any = {
                 skip: (currentPage - 1) * pageSize,
@@ -94,11 +94,11 @@ export default function ProductsPage() {
             }
 
             const response = await apiService.getProducts(params);
-            
+
             // Handle different response structures
             let productsArray: Product[] = [];
             let total = 0;
-            
+
             if (response && typeof response === 'object') {
                 // Check for 'products' property (from ProductListResponse)
                 if ('products' in response && Array.isArray(response.products)) {
@@ -121,14 +121,14 @@ export default function ProductsPage() {
 
             // Apply client-side filters for low stock
             if (lowStockOnly) {
-                filteredProducts = filteredProducts.filter((p: Product) => 
+                filteredProducts = filteredProducts.filter((p: Product) =>
                     p.available_quantity > 0 && p.available_quantity < 20
                 );
             }
 
             // Apply client-side filter for in stock
             if (inStockOnly) {
-                filteredProducts = filteredProducts.filter((p: Product) => 
+                filteredProducts = filteredProducts.filter((p: Product) =>
                     p.available_quantity > 0
                 );
             }
@@ -159,7 +159,7 @@ export default function ProductsPage() {
         setSelectedCategoryId(categoryId);
         setSelectedCategoryName(categoryName);
         setCurrentPage(1);
-        
+
         if (categoryName === 'Toutes les catégories') {
             router.push('/products');
         } else {
@@ -226,13 +226,13 @@ export default function ProductsPage() {
             {/* Filters and Products Grid */}
             <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="flex flex-col lg:flex-row gap-8">
-                    
+
                     {/* Sidebar Filters */}
                     <div className="lg:w-64 shrink-0">
-                        <div className="bg-white rounded-lg border border-stone-200 p-6 sticky top-8">
+                        <div className="glass bg-white/80 rounded-2xl border border-stone-200 p-6 sticky top-24 shadow-md">
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="text-lg font-semibold text-stone-900">Filtres</h3>
-                                <Filter className="h-5 w-5 text-stone-500" />
+                                <Filter className="h-5 w-5 text-amber-600" />
                             </div>
 
                             {/* Search */}
@@ -243,7 +243,7 @@ export default function ProductsPage() {
                                     placeholder="Nom, SKU..."
                                     value={searchTerm}
                                     onChange={handleSearchChange}
-                                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
+                                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm transition-all duration-300"
                                 />
                             </div>
 
@@ -308,7 +308,7 @@ export default function ProductsPage() {
                             </div>
 
                             {/* Reset Filters */}
-                            <button 
+                            <button
                                 onClick={resetAllFilters}
                                 className="w-full bg-stone-100 text-stone-700 py-2 px-4 rounded-lg text-sm font-medium hover:bg-stone-200 transition-colors"
                             >
@@ -335,7 +335,7 @@ export default function ProductsPage() {
                                     </>
                                 )}
                             </div>
-                            
+
                             <div className="flex items-center gap-4">
                                 {/* View Toggle */}
                                 <div className="flex items-center gap-1 bg-white border border-stone-200 rounded-lg p-1">
@@ -356,29 +356,42 @@ export default function ProductsPage() {
                             </div>
                         )}
 
-                        {/* Loading State */}
+                        {/* Loading State with Skeleton */}
                         {loading && (
-                            <div className="flex justify-center items-center py-12">
-                                <Loader2 className="h-8 w-8 text-amber-600 animate-spin" />
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {[1, 2, 3, 4, 5, 6].map((n) => (
+                                    <div key={n} className="bg-white rounded-2xl overflow-hidden shadow-md border border-stone-200 animate-pulse">
+                                        <div className="h-80 bg-stone-200 skeleton"></div>
+                                        <div className="p-6">
+                                            <div className="h-6 bg-stone-200 rounded mb-3 skeleton"></div>
+                                            <div className="h-4 bg-stone-200 rounded mb-4 w-3/4 skeleton"></div>
+                                            <div className="h-10 bg-stone-200 rounded skeleton"></div>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         )}
 
-                        {/* Products Grid */}
+                        {/* Products Grid with Stagger Animation */}
                         {!loading && !error && products.length > 0 && (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {products.map((product) => (
-                                    <ProductCard
+                                {products.map((product, index) => (
+                                    <div
                                         key={product.id}
-                                        id={product.id}
-                                        name={product.name}
-                                        category={product.category?.name || 'Non catégorisé'}
-                                        stock={getStockStatus(product.available_quantity, product.needs_restock)}
-                                        stockQuantity={product.available_quantity}
-                                        image={product.main_image || '/images/products/placeholder.jpg'}
-                                        description={product.short_description || product.description || ''}
-                                        onViewDetails={() => handleViewDetails(product.id)}
-                                        buttonType="cart"
-                                    />
+                                        className={`animate-fade-in-up delay-${Math.min(index * 75, 300)}`}
+                                    >
+                                        <ProductCard
+                                            id={product.id}
+                                            name={product.name}
+                                            category={product.category?.name || 'Non catégorisé'}
+                                            stock={getStockStatus(product.available_quantity, product.needs_restock)}
+                                            stockQuantity={product.available_quantity}
+                                            image={product.main_image || '/images/products/placeholder.jpg'}
+                                            description={product.short_description || product.description || ''}
+                                            onViewDetails={() => handleViewDetails(product.id)}
+                                            buttonType="cart"
+                                        />
+                                    </div>
                                 ))}
                             </div>
                         )}
@@ -406,10 +419,10 @@ export default function ProductsPage() {
 
                         {/* Load More */}
                         {!loading && !error && products.length > 0 && totalProducts > (currentPage * pageSize) && (
-                            <div className="text-center mt-12">
-                                <button 
+                            <div className="text-center mt-12 animate-fade-in">
+                                <button
                                     onClick={handleLoadMore}
-                                    className="bg-white text-stone-800 px-8 py-3 rounded-lg font-medium border border-stone-300 hover:border-amber-600 hover:bg-stone-50 transition-colors"
+                                    className="bg-white text-stone-800 px-8 py-3 rounded-xl font-medium border border-stone-300 hover:border-amber-600 hover:bg-stone-50 transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105 transform"
                                 >
                                     Charger plus de produits
                                 </button>

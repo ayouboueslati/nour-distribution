@@ -234,8 +234,61 @@ export default function ProductsPage() {
 
   if (loading) {
     return (
-      <div className="p-6 flex justify-center items-center min-h-96">
-        <div className="text-stone-600">Chargement des produits...</div>
+      <div className="p-6 space-y-6">
+        {/* Header Skeleton */}
+        <div className="flex justify-between items-center animate-fade-in">
+          <div>
+            <div className="h-8 w-64 bg-stone-200 rounded skeleton mb-2"></div>
+            <div className="h-4 w-48 bg-stone-200 rounded skeleton"></div>
+          </div>
+          <div className="flex space-x-3">
+            <div className="h-10 w-40 bg-stone-200 rounded-lg skeleton"></div>
+            <div className="h-10 w-40 bg-stone-200 rounded-lg skeleton"></div>
+          </div>
+        </div>
+
+        {/* Stats Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-xl border border-stone-200 p-6 animate-pulse" style={{ animationDelay: `${i * 75}ms` }}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="h-4 bg-stone-200 rounded w-1/2 skeleton"></div>
+                <div className="w-10 h-10 bg-stone-200 rounded-lg skeleton"></div>
+              </div>
+              <div className="h-8 bg-stone-200 rounded w-1/3 skeleton"></div>
+            </div>
+          ))}
+        </div>
+
+        {/* Filters Skeleton */}
+        <div className="bg-white rounded-xl border border-stone-200 p-6">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-10 bg-stone-200 rounded skeleton"></div>
+            ))}
+          </div>
+        </div>
+
+        {/* Table Skeleton */}
+        <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
+          {/* Table Header */}
+          <div className="border-b border-stone-200 p-6">
+            <div className="h-6 bg-stone-200 rounded w-48 skeleton"></div>
+          </div>
+
+          {/* Table Rows */}
+          <div className="divide-y divide-stone-100">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="p-4 animate-pulse" style={{ animationDelay: `${i * 50}ms` }}>
+                <div className="grid grid-cols-9 gap-4">
+                  {Array.from({ length: 9 }).map((_, j) => (
+                    <div key={j} className="h-4 bg-stone-200 rounded skeleton"></div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }

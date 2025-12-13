@@ -1,85 +1,145 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Card } from '../../../../components/ui/Card';
 import { Button } from '../../../../components/ui/Button';
 import { Input } from '../../../../components/ui/Input';
 import { Select } from '../../../../components/ui/Select';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../../../components/ui/Table';
-
-// Mock data for devis
-const devisData = [
-  { 
-    id: 'DEV-001', 
-    client: 'Sarah Beauty', 
-    type: 'B2B',
-    montant: '1,200€',
-    statut: 'En attente',
-    dateCreation: '2025-01-15',
-    dateExpiration: '2025-02-15',
-    items: 5,
-    clientId: 'CLI-001'
-  },
-  { 
-    id: 'DEV-002', 
-    client: 'Institut Afro', 
-    type: 'B2B',
-    montant: '2,450€',
-    statut: 'Accepté',
-    dateCreation: '2025-01-10',
-    dateExpiration: '2025-02-10',
-    items: 8,
-    clientId: 'CLI-002'
-  },
-  { 
-    id: 'DEV-003', 
-    client: 'Marie Dupont', 
-    type: 'B2C',
-    montant: '85€',
-    statut: 'Refusé',
-    dateCreation: '2025-01-08',
-    dateExpiration: '2025-02-08',
-    items: 2,
-    clientId: 'CLI-003'
-  },
-  { 
-    id: 'DEV-004', 
-    client: 'Coiffure Élégance', 
-    type: 'B2B',
-    montant: '1,800€',
-    statut: 'Transformé en facture',
-    dateCreation: '2025-01-05',
-    dateExpiration: '2025-02-05',
-    items: 6,
-    clientId: 'CLI-004',
-    factureId: 'FAC-001'
-  },
-];
+import { apiService } from '../../../../lib/api';
 
 export default function DevisPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [devisList, setDevisList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    accepted: 0,
+    converted: 0
+  });
 
-  const filteredDevis = devisData.filter(devis => 
-    devis.client.toLowerCase().includes(search.toLowerCase()) &&
-    (statusFilter === 'all' || devis.statut === statusFilter)
+  useEffect(() => {
+    loadDevis();
+  }, [statusFilter]);
+
+  const loadDevis = async () => {
+    try {
+      setLoading(true);
+      const params: any = {};
+      
+      if (statusFilter !== 'all') {
+        params.status = statusFilter;
+      }
+
+      const response = await apiService.getDevis(params);
+      const devisData = response.documents || response;
+      setDevisList(devisData);
+      
+      // Calculate stats
+      setStats({
+        total: devisData.length,
+        pending: devisData.filter((d: any) => d.status === 'en_attente').length,
+        accepted: devisData.filter((d: any) => d.status === 'accepte').length,
+        converted: devisData.filter((d: any) => d.status === 'facture').length
+      });
+    } catch (error) {
+      console.error('Error loading devis:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAcceptDevis = async (devisId: string) => {
+    if (!confirm('Accepter ce devis ?')) return;
+    
+    try {
+      await apiService.acceptDevis(devisId);
+      loadDevis();
+    } catch (error) {
+      console.error('Error accepting devis:', error);
+    }
+  };
+
+  const handleConvertToFacture = async (devisId: string) => {
+    if (!confirm('Convertir ce devis en facture ? Le stock sera réduit.')) return;
+    
+    try {
+      await apiService.convertDevisToFacture(devisId);
+      loadDevis();
+    } catch (error) {
+      console.error('Error converting to facture:', error);
+    }
+  };
+
+  const filteredDevis = devisList.filter(devis => 
+    devis.client?.company_name?.toLowerCase().includes(search.toLowerCase()) ||
+    devis.client?.first_name?.toLowerCase().includes(search.toLowerCase()) ||
+    devis.client?.last_name?.toLowerCase().includes(search.toLowerCase()) ||
+    devis.document_number?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const getStatusColor = (statut: string) => {
-    switch (statut) {
-      case 'En attente': return 'bg-amber-100 text-amber-800';
-      case 'Accepté': return 'bg-green-100 text-green-800';
-      case 'Refusé': return 'bg-red-100 text-red-800';
-      case 'Transformé en facture': return 'bg-blue-100 text-blue-800';
-      case 'Expiré': return 'bg-stone-100 text-stone-800';
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'en_attente': return 'bg-amber-100 text-amber-800';
+      case 'brouillon': return 'bg-stone-100 text-stone-800';
+      case 'accepte': return 'bg-green-100 text-green-800';
+      case 'refuse': return 'bg-red-100 text-red-800';
+      case 'facture': return 'bg-blue-100 text-blue-800';
+      case 'annule': return 'bg-stone-100 text-stone-800';
       default: return 'bg-stone-100 text-stone-800';
     }
   };
 
-  const getTypeColor = (type: string) => {
-    return type === 'B2B' ? 'bg-purple-100 text-purple-800' : 'bg-cyan-100 text-cyan-800';
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'en_attente': return 'En attente';
+      case 'brouillon': return 'Brouillon';
+      case 'accepte': return 'Accepté';
+      case 'refuse': return 'Refusé';
+      case 'facture': return 'Transformé en facture';
+      case 'annule': return 'Annulé';
+      default: return status;
+    }
   };
+
+  const getTypeColor = (type: string) => {
+    return type === 'b2b' ? 'bg-purple-100 text-purple-800' : 'bg-cyan-100 text-cyan-800';
+  };
+
+  const getTypeLabel = (type: string) => {
+    return type === 'b2b' ? 'B2B' : 'B2C';
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('fr-FR');
+  };
+
+  const formatAmount = (amount: number) => {
+    if (!amount) return '-';
+    return `${amount.toFixed(2)} DT`;
+  };
+
+  const getClientName = (client: any) => {
+    if (!client) return 'Client inconnu';
+    if (client.type === 'b2b') {
+      return client.company_name || 'Entreprise';
+    }
+    return `${client.first_name || ''} ${client.last_name || ''}`.trim() || 'Client';
+  };
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -89,19 +149,14 @@ export default function DevisPage() {
           <h1 className="text-3xl font-light text-stone-800">Gestion des Devis</h1>
           <p className="text-stone-600 mt-1">Créez et gérez vos devis pour vos clients B2B et B2C</p>
         </div>
-        <Link href="/admin/sales/devis/new">
-          <Button variant="primary">
-            + Nouveau Devis
-          </Button>
-        </Link>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatCard title="Total Devis" value={devisData.length.toString()} icon="📊" />
-        <StatCard title="En attente" value="1" icon="⏳" variant="warning" />
-        <StatCard title="Acceptés" value="1" icon="✅" variant="success" />
-        <StatCard title="Transformés" value="1" icon="🧾" variant="info" />
+        <StatCard title="Total Devis" value={stats.total.toString()} icon="📊" />
+        <StatCard title="En attente" value={stats.pending.toString()} icon="⏳" variant="warning" />
+        <StatCard title="Acceptés" value={stats.accepted.toString()} icon="✅" variant="success" />
+        <StatCard title="Transformés" value={stats.converted.toString()} icon="🧾" variant="info" />
       </div>
 
       {/* Filters */}
@@ -116,24 +171,21 @@ export default function DevisPage() {
             <Select
               options={[
                 { value: 'all', label: 'Tous les statuts' },
-                { value: 'En attente', label: 'En attente' },
-                { value: 'Accepté', label: 'Accepté' },
-                { value: 'Refusé', label: 'Refusé' },
-                { value: 'Transformé en facture', label: 'Transformé en facture' },
-                { value: 'Expiré', label: 'Expiré' }
+                { value: 'en_attente', label: 'En attente' },
+                { value: 'accepte', label: 'Accepté' },
+                { value: 'refuse', label: 'Refusé' },
+                { value: 'facture', label: 'Transformé en facture' },
+                { value: 'annule', label: 'Annulé' }
               ]}
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             />
-            <Select
-              options={[
-                { value: 'all', label: 'B2B et B2C' },
-                { value: 'B2B', label: 'Professionnels (B2B)' },
-                { value: 'B2C', label: 'Particuliers (B2C)' }
-              ]}
-              value="all"
-              onChange={() => {}}
-            />
+            <button
+              onClick={loadDevis}
+              className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+            >
+              🔄 Actualiser
+            </button>
           </div>
         </div>
       </Card>
@@ -150,7 +202,7 @@ export default function DevisPage() {
                 <TableHead>Montant</TableHead>
                 <TableHead>Articles</TableHead>
                 <TableHead>Création</TableHead>
-                <TableHead>Expiration</TableHead>
+                <TableHead>Échéance</TableHead>
                 <TableHead>Statut</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -158,20 +210,20 @@ export default function DevisPage() {
             <TableBody>
               {filteredDevis.map((devis) => (
                 <TableRow key={devis.id}>
-                  <TableCell className="font-medium">{devis.id}</TableCell>
-                  <TableCell>{devis.client}</TableCell>
+                  <TableCell className="font-medium">{devis.document_number}</TableCell>
+                  <TableCell>{getClientName(devis.client)}</TableCell>
                   <TableCell>
-                    <span className={`inline-flex px-2 py-1 text-xs rounded-full ${getTypeColor(devis.type)}`}>
-                      {devis.type}
+                    <span className={`inline-flex px-2 py-1 text-xs rounded-full ${getTypeColor(devis.client?.type)}`}>
+                      {getTypeLabel(devis.client?.type)}
                     </span>
                   </TableCell>
-                  <TableCell className="font-semibold">{devis.montant}</TableCell>
-                  <TableCell>{devis.items} article(s)</TableCell>
-                  <TableCell>{devis.dateCreation}</TableCell>
-                  <TableCell>{devis.dateExpiration}</TableCell>
+                  <TableCell className="font-semibold">{formatAmount(devis.total_amount)}</TableCell>
+                  <TableCell>{devis.items?.length || 0} article(s)</TableCell>
+                  <TableCell>{formatDate(devis.issue_date)}</TableCell>
+                  <TableCell>{formatDate(devis.due_date)}</TableCell>
                   <TableCell>
-                    <span className={`inline-flex px-3 py-1 text-xs rounded-full font-medium ${getStatusColor(devis.statut)}`}>
-                      {devis.statut}
+                    <span className={`inline-flex px-3 py-1 text-xs rounded-full font-medium ${getStatusColor(devis.status)}`}>
+                      {getStatusLabel(devis.status)}
                     </span>
                   </TableCell>
                   <TableCell>
@@ -182,19 +234,24 @@ export default function DevisPage() {
                       >
                         Voir
                       </Link>
-                      {devis.statut === 'En attente' && (
+                      {devis.status === 'en_attente' && (
                         <>
-                          <button className="text-green-600 hover:text-green-700 text-sm font-medium">
+                          <button 
+                            onClick={() => handleAcceptDevis(devis.id)}
+                            className="text-green-600 hover:text-green-700 text-sm font-medium"
+                          >
                             Accepter
-                          </button>
-                          <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                            Facturer
                           </button>
                         </>
                       )}
-                      <button className="text-red-600 hover:text-red-700 text-sm font-medium">
-                        Supprimer
-                      </button>
+                      {devis.status === 'accepte' && (
+                        <button 
+                          onClick={() => handleConvertToFacture(devis.id)}
+                          className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                        >
+                          Facturer
+                        </button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -208,16 +265,9 @@ export default function DevisPage() {
               <p className="text-stone-500 mt-2">
                 {search || statusFilter !== 'all' 
                   ? 'Ajustez vos filtres pour voir plus de résultats' 
-                  : 'Commencez par créer votre premier devis'
+                  : 'Les devis créés depuis les commandes apparaîtront ici'
                 }
               </p>
-              {(search === '' && statusFilter === 'all') && (
-                <Link href="/admin/sales/devis/new" className="inline-block mt-4">
-                  <Button variant="primary">
-                    + Créer un Devis
-                  </Button>
-                </Link>
-              )}
             </div>
           )}
         </div>

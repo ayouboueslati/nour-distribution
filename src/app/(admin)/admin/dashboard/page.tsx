@@ -2,11 +2,12 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import {Card} from '../../../components/ui/index';
-import { 
+import { Card } from '../../../components/ui/index';
+import {
   LineChart, Line, BarChart, Bar, AreaChart, Area,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
+import { SkeletonStatCard, SkeletonChart, SkeletonOrderCard, SkeletonList } from '../../../components/ui/Skeletons';
 // import ProtectedRoute from '../../../components/ProtectedRoute';
 
 
@@ -85,6 +86,13 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export default function DashboardPage() {
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('month');
   const [chartType, setChartType] = useState<'line' | 'bar' | 'area'>('line');
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Simulate data loading
+  useState(() => {
+    const timer = setTimeout(() => setIsLoading(false), 1500);
+    return () => clearTimeout(timer);
+  });
 
   // Get chart data based on time range
   const chartData = useMemo(() => {
@@ -118,31 +126,31 @@ export default function DashboardPage() {
         return (
           <LineChart {...commonProps}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis 
-              dataKey={xAxisKey} 
+            <XAxis
+              dataKey={xAxisKey}
               tick={{ fill: '#6b7280' }}
               axisLine={{ stroke: '#e5e7eb' }}
             />
-            <YAxis 
+            <YAxis
               tick={{ fill: '#6b7280' }}
               axisLine={{ stroke: '#e5e7eb' }}
               tickFormatter={(value) => `${value / 1000}k`}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend />
-            <Line 
-              type="monotone" 
-              dataKey="sales" 
-              stroke="#10b981" 
+            <Line
+              type="monotone"
+              dataKey="sales"
+              stroke="#10b981"
               strokeWidth={2}
               dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
               activeDot={{ r: 6, fill: '#059669' }}
               name="Ventes (€)"
             />
-            <Line 
-              type="monotone" 
-              dataKey="revenue" 
-              stroke="#3b82f6" 
+            <Line
+              type="monotone"
+              dataKey="revenue"
+              stroke="#3b82f6"
               strokeWidth={2}
               dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
               activeDot={{ r: 6, fill: '#2563eb' }}
@@ -155,27 +163,27 @@ export default function DashboardPage() {
         return (
           <BarChart {...commonProps}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis 
-              dataKey={xAxisKey} 
+            <XAxis
+              dataKey={xAxisKey}
               tick={{ fill: '#6b7280' }}
               axisLine={{ stroke: '#e5e7eb' }}
             />
-            <YAxis 
+            <YAxis
               tick={{ fill: '#6b7280' }}
               axisLine={{ stroke: '#e5e7eb' }}
               tickFormatter={(value) => `${value / 1000}k`}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend />
-            <Bar 
-              dataKey="sales" 
-              fill="#10b981" 
+            <Bar
+              dataKey="sales"
+              fill="#10b981"
               radius={[4, 4, 0, 0]}
               name="Ventes (€)"
             />
-            <Bar 
-              dataKey="orders" 
-              fill="#f59e0b" 
+            <Bar
+              dataKey="orders"
+              fill="#f59e0b"
               radius={[4, 4, 0, 0]}
               name="Commandes"
             />
@@ -187,41 +195,41 @@ export default function DashboardPage() {
           <AreaChart {...commonProps}>
             <defs>
               <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-                <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
+                <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
+                <stop offset="95%" stopColor="#10b981" stopOpacity={0.1} />
               </linearGradient>
               <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
+                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis 
-              dataKey={xAxisKey} 
+            <XAxis
+              dataKey={xAxisKey}
               tick={{ fill: '#6b7280' }}
               axisLine={{ stroke: '#e5e7eb' }}
             />
-            <YAxis 
+            <YAxis
               tick={{ fill: '#6b7280' }}
               axisLine={{ stroke: '#e5e7eb' }}
               tickFormatter={(value) => `${value / 1000}k`}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend />
-            <Area 
-              type="monotone" 
-              dataKey="sales" 
-              stroke="#10b981" 
-              fillOpacity={1} 
-              fill="url(#colorSales)" 
+            <Area
+              type="monotone"
+              dataKey="sales"
+              stroke="#10b981"
+              fillOpacity={1}
+              fill="url(#colorSales)"
               name="Ventes (€)"
             />
-            <Area 
-              type="monotone" 
-              dataKey="revenue" 
-              stroke="#3b82f6" 
-              fillOpacity={1} 
-              fill="url(#colorRevenue)" 
+            <Area
+              type="monotone"
+              dataKey="revenue"
+              stroke="#3b82f6"
+              fillOpacity={1}
+              fill="url(#colorRevenue)"
               name="Revenu Total (€)"
             />
           </AreaChart>
@@ -231,22 +239,22 @@ export default function DashboardPage() {
         return (
           <LineChart {...commonProps}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis 
-              dataKey={xAxisKey} 
+            <XAxis
+              dataKey={xAxisKey}
               tick={{ fill: '#6b7280' }}
               axisLine={{ stroke: '#e5e7eb' }}
             />
-            <YAxis 
+            <YAxis
               tick={{ fill: '#6b7280' }}
               axisLine={{ stroke: '#e5e7eb' }}
               tickFormatter={(value) => `${value / 1000}k`}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend />
-            <Line 
-              type="monotone" 
-              dataKey="sales" 
-              stroke="#10b981" 
+            <Line
+              type="monotone"
+              dataKey="sales"
+              stroke="#10b981"
               strokeWidth={2}
               dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
               activeDot={{ r: 6, fill: '#059669' }}
@@ -263,7 +271,7 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-light text-stone-800">Tableau de Bord</h1>
-        <select 
+        <select
           className="border border-stone-300 rounded-xl px-4 py-2"
           value={timeRange}
           onChange={(e) => setTimeRange(e.target.value as any)}
@@ -276,29 +284,29 @@ export default function DashboardPage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          title="Chiffre d'affaires" 
+        <StatCard
+          title="Chiffre d'affaires"
           value={dashboardData.stats.totalRevenue}
           icon="💰"
           trend="+12%"
           link="/admin/sales/factures"
         />
-        <StatCard 
-          title="Commandes en attente" 
+        <StatCard
+          title="Commandes en attente"
           value={dashboardData.stats.pendingOrders.toString()}
           icon="📦"
           trend="+3"
           link="/admin/orders"
         />
-        <StatCard 
-          title="Produits en rupture" 
+        <StatCard
+          title="Produits en rupture"
           value={dashboardData.stats.lowStock.toString()}
           icon="⚠️"
           trend="Urgent"
           link="/admin/products"
         />
-        <StatCard 
-          title="Devis en attente" 
+        <StatCard
+          title="Devis en attente"
           value={dashboardData.stats.pendingQuotes.toString()}
           icon="📄"
           trend="+2"
@@ -319,11 +327,10 @@ export default function DashboardPage() {
                 <button
                   key={type}
                   onClick={() => setChartType(type)}
-                  className={`px-3 py-1 rounded-lg text-sm transition-all duration-200 ${
-                    chartType === type
+                  className={`px-3 py-1 rounded-lg text-sm transition-all duration-200 ${chartType === type
                       ? 'bg-amber-500 text-white shadow-md'
                       : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-                  }`}
+                    }`}
                 >
                   {type === 'line' && 'Ligne'}
                   {type === 'bar' && 'Barres'}
@@ -415,9 +422,8 @@ export default function DashboardPage() {
                 </div>
                 <div className="text-right">
                   <p className="font-semibold text-stone-800">{order.amount}</p>
-                  <span className={`inline-block px-2 py-1 rounded-full text-xs ${
-                    order.status === 'En attente' ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'
-                  }`}>
+                  <span className={`inline-block px-2 py-1 rounded-full text-xs ${order.status === 'En attente' ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'
+                    }`}>
                     {order.status}
                   </span>
                 </div>
@@ -441,9 +447,8 @@ export default function DashboardPage() {
                   <p className="font-semibold text-stone-800">{product.name}</p>
                   <p className="text-stone-600 text-sm">Stock: {product.stock} unités</p>
                 </div>
-                <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  product.alert === 'danger' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'
-                }`}>
+                <div className={`px-3 py-1 rounded-full text-xs font-medium ${product.alert === 'danger' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'
+                  }`}>
                   {product.alert === 'danger' ? 'Rupture imminente' : 'Stock faible'}
                 </div>
               </div>
@@ -456,17 +461,17 @@ export default function DashboardPage() {
   );
 }
 
-function StatCard({ 
-  title, 
-  value, 
-  icon, 
-  trend, 
-  link 
-}: { 
-  title: string; 
-  value: string; 
-  icon: string; 
-  trend: string; 
+function StatCard({
+  title,
+  value,
+  icon,
+  trend,
+  link
+}: {
+  title: string;
+  value: string;
+  icon: string;
+  trend: string;
   link: string;
 }) {
   return (
@@ -479,9 +484,8 @@ function StatCard({
           </div>
           <span className="text-2xl">{icon}</span>
         </div>
-        <p className={`text-sm mt-3 ${
-          trend.includes('+') ? 'text-green-600' : trend === 'Urgent' ? 'text-red-600' : 'text-stone-600'
-        }`}>
+        <p className={`text-sm mt-3 ${trend.includes('+') ? 'text-green-600' : trend === 'Urgent' ? 'text-red-600' : 'text-stone-600'
+          }`}>
           {trend}
         </p>
       </Card>

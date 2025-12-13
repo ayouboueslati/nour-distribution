@@ -1,93 +1,120 @@
-// frontend/src/app/(admin)/admin/sales/factures/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Card } from '../../../../components/ui/Card';
 import { Button } from '../../../../components/ui/Button';
 import { Input } from '../../../../components/ui/Input';
 import { Select } from '../../../../components/ui/Select';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../../../components/ui/Table';
-
-// Mock data for factures
-const facturesData = [
-  { 
-    id: 'FAC-001', 
-    client: 'Sarah Beauty', 
-    type: 'B2B',
-    montant: '1,200€',
-    statut: 'Payée',
-    dateEmission: '2025-01-20',
-    dateEcheance: '2025-02-20',
-    devisId: 'DEV-001',
-    modePaiement: 'Virement'
-  },
-  { 
-    id: 'FAC-002', 
-    client: 'Institut Afro', 
-    type: 'B2B',
-    montant: '2,450€',
-    statut: 'En retard',
-    dateEmission: '2025-01-15',
-    dateEcheance: '2025-01-30',
-    devisId: 'DEV-002',
-    modePaiement: 'Chèque'
-  },
-  { 
-    id: 'FAC-003', 
-    client: 'Coiffure Élégance', 
-    type: 'B2B',
-    montant: '1,800€',
-    statut: 'En attente',
-    dateEmission: '2025-01-18',
-    dateEcheance: '2025-02-18',
-    devisId: 'DEV-004',
-    modePaiement: 'Virement'
-  },
-  { 
-    id: 'FAC-004', 
-    client: 'Marie Dupont', 
-    type: 'B2C',
-    montant: '85€',
-    statut: 'Partiellement payée',
-    dateEmission: '2025-01-12',
-    dateEcheance: '2025-02-12',
-    devisId: null,
-    modePaiement: 'Espèces'
-  },
-];
+import { apiService } from '../../../../lib/api';
 
 export default function FacturesPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [facturesList, setFacturesList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    total: 0,
+    paid: 0,
+    pending: 0,
+    overdue: 0,
+    revenue: 0
+  });
 
-  const filteredFactures = facturesData.filter(facture => 
-    facture.client.toLowerCase().includes(search.toLowerCase()) &&
-    (statusFilter === 'all' || facture.statut === statusFilter)
-  );
+  useEffect(() => {
+    loadFactures();
+  }, [statusFilter]);
 
-  const getStatusColor = (statut: string) => {
-    switch (statut) {
-      case 'Payée': return 'bg-green-100 text-green-800';
-      case 'En attente': return 'bg-amber-100 text-amber-800';
-      case 'En retard': return 'bg-red-100 text-red-800';
-      case 'Partiellement payée': return 'bg-blue-100 text-blue-800';
-      case 'Annulée': return 'bg-stone-100 text-stone-800';
-      default: return 'bg-stone-100 text-stone-800';
+  const loadFactures = async () => {
+    try {
+      setLoading(true);
+      const params: any = {};
+
+      if (statusFilter !== 'all') {
+        params.status = statusFilter;
+      }
+
+      const response = await apiService.getFactures(params);
+      const facturesData = response.documents || response;
+      setFacturesList(facturesData);
+
+      // Calculate stats
+      const revenue = facturesData
+        .filter((f: any) => f.status === 'payee' || f.status === 'paid')
+        .reduce((sum: number, f: any) => sum + (f.total_amount || 0), 0);
+
+      setStats({
+        total: facturesData.length,
+        paid: facturesData.filter((f: any) => f.status === 'payee' || f.status === 'paid').length,
+        pending: facturesData.filter((f: any) => f.status === 'en_attente' || f.status === 'pending').length,
+        overdue: facturesData.filter((f: any) => f.status === 'en_retard' || f.status === 'overdue').length,
+        revenue
+      });
+    } catch (error) {
+      console.error('Error loading factures:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getTypeColor = (type: string) => {
-    return type === 'B2B' ? 'bg-purple-100 text-purple-800' : 'bg-cyan-100 text-cyan-800';
+  const filteredFactures = facturesList.filter(facture =>
+    facture.client?.company_name?.toLowerCase().includes(search.toLowerCase()) ||
+    facture.client?.first_name?.toLowerCase().includes(search.toLowerCase()) ||
+    facture.client?.last_name?.toLowerCase().includes(search.toLowerCase()) ||
+    facture.document_number?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const getStatusColor = (status: string) => {
+    const s = status?.toLowerCase();
+    if (s === 'payee' || s === 'paid') return 'bg-green-100 text-green-800';
+    if (s === 'en_attente' || s === 'pending') return 'bg-amber-100 text-amber-800';
+    if (s === 'en_retard' || s === 'overdue') return 'bg-red-100 text-red-800';
+    if (s === 'partiellement_payee') return 'bg-blue-100 text-blue-800';
+    return 'bg-stone-100 text-stone-800';
   };
 
-  const totalChiffreAffaires = facturesData
-    .filter(f => f.statut === 'Payée')
-    .reduce((sum, f) => sum + parseFloat(f.montant.replace('€', '').replace(',', '')), 0);
+  const getStatusLabel = (status: string) => {
+    const s = status?.toLowerCase();
+    if (s === 'payee' || s === 'paid') return 'Payée';
+    if (s === 'en_attente' || s === 'pending') return 'En attente';
+    if (s === 'en_retard' || s === 'overdue') return 'En retard';
+    if (s === 'partiellement_payee') return 'Partiellement payée';
+    if (s === 'annule' || s === 'cancelled') return 'Annulée';
+    return status;
+  };
 
-  const totalEnAttente = facturesData
-    .filter(f => f.statut === 'En attente')
-    .reduce((sum, f) => sum + parseFloat(f.montant.replace('€', '').replace(',', '')), 0);
+  const getTypeColor = (type: string) => {
+    return type === 'b2b' ? 'bg-purple-100 text-purple-800' : 'bg-cyan-100 text-cyan-800';
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('fr-FR');
+  };
+
+  const formatAmount = (amount: number) => {
+    if (!amount) return '0.00 DT';
+    return `${amount.toFixed(2)} DT`;
+  };
+
+  const getClientName = (client: any) => {
+    if (!client) return 'Client inconnu';
+    if (client.type === 'b2b') {
+      return client.company_name || 'Entreprise';
+    }
+    return `${client.first_name || ''} ${client.last_name || ''}`.trim() || 'Client';
+  };
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -106,10 +133,10 @@ export default function FacturesPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatCard title="Total Factures" value={facturesData.length.toString()} icon="🧾" />
-        <StatCard title="Chiffre d'affaires" value={`${totalChiffreAffaires}€`} icon="💰" variant="success" />
-        <StatCard title="En attente" value={`${totalEnAttente}€`} icon="⏳" variant="warning" />
-        <StatCard title="En retard" value="1" icon="⚠️" variant="danger" />
+        <StatCard title="Total Factures" value={stats.total.toString()} icon="🧾" />
+        <StatCard title="Chiffre d'affaires" value={formatAmount(stats.revenue)} icon="💰" variant="success" />
+        <StatCard title="En attente" value={stats.pending.toString()} icon="⏳" variant="warning" />
+        <StatCard title="En retard" value={stats.overdue.toString()} icon="⚠️" variant="danger" />
       </div>
 
       {/* Filters */}
@@ -124,26 +151,20 @@ export default function FacturesPage() {
             <Select
               options={[
                 { value: 'all', label: 'Tous les statuts' },
-                { value: 'Payée', label: 'Payée' },
-                { value: 'En attente', label: 'En attente' },
-                { value: 'En retard', label: 'En retard' },
-                { value: 'Partiellement payée', label: 'Partiellement payée' },
-                { value: 'Annulée', label: 'Annulée' }
+                { value: 'payee', label: 'Payée' },
+                { value: 'en_attente', label: 'En attente' },
+                { value: 'en_retard', label: 'En retard' },
+                { value: 'annule', label: 'Annulée' }
               ]}
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             />
-            <Select
-              options={[
-                { value: 'all', label: 'Tous les modes' },
-                { value: 'Virement', label: 'Virement' },
-                { value: 'Chèque', label: 'Chèque' },
-                { value: 'Espèces', label: 'Espèces' },
-                { value: 'Carte', label: 'Carte bancaire' }
-              ]}
-              value="all"
-              onChange={() => {}}
-            />
+            <button
+              onClick={loadFactures}
+              className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+            >
+              🔄 Actualiser
+            </button>
           </div>
         </div>
       </Card>
@@ -158,10 +179,9 @@ export default function FacturesPage() {
                 <TableHead>Client</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Montant</TableHead>
-                <TableHead>Devis</TableHead>
+                <TableHead>Devis Lié</TableHead>
                 <TableHead>Émission</TableHead>
                 <TableHead>Échéance</TableHead>
-                <TableHead>Paiement</TableHead>
                 <TableHead>Statut</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -169,57 +189,45 @@ export default function FacturesPage() {
             <TableBody>
               {filteredFactures.map((facture) => (
                 <TableRow key={facture.id}>
-                  <TableCell className="font-medium">{facture.id}</TableCell>
-                  <TableCell>{facture.client}</TableCell>
+                  <TableCell className="font-medium">{facture.document_number}</TableCell>
+                  <TableCell>{getClientName(facture.client)}</TableCell>
                   <TableCell>
-                    <span className={`inline-flex px-2 py-1 text-xs rounded-full ${getTypeColor(facture.type)}`}>
-                      {facture.type}
+                    <span className={`inline-flex px-2 py-1 text-xs rounded-full ${getTypeColor(facture.client?.type)}`}>
+                      {facture.client?.type === 'b2b' ? 'B2B' : 'B2C'}
                     </span>
                   </TableCell>
-                  <TableCell className="font-semibold">{facture.montant}</TableCell>
+                  <TableCell className="font-semibold">{formatAmount(facture.total_amount)}</TableCell>
                   <TableCell>
-                    {facture.devisId ? (
-                      <Link 
-                        href={`/admin/sales/devis/${facture.devisId}`}
-                        className="text-blue-600 hover:text-blue-700 text-sm"
+                    {facture.devis_id ? (
+                      <Link
+                        href={`/admin/sales/devis/${facture.devis_id}`}
+                        className="text-blue-600 hover:text-blue-700 text-sm hover:underline"
                       >
-                        {facture.devisId}
+                        Voir Devis
                       </Link>
                     ) : (
                       <span className="text-stone-400 text-sm">-</span>
                     )}
                   </TableCell>
-                  <TableCell>{facture.dateEmission}</TableCell>
+                  <TableCell>{formatDate(facture.issue_date)}</TableCell>
                   <TableCell className={
-                    facture.statut === 'En retard' ? 'text-red-600 font-medium' : ''
+                    (facture.status === 'en_retard' || facture.status === 'overdue') ? 'text-red-600 font-medium' : ''
                   }>
-                    {facture.dateEcheance}
+                    {formatDate(facture.due_date)}
                   </TableCell>
-                  <TableCell>{facture.modePaiement}</TableCell>
                   <TableCell>
-                    <span className={`inline-flex px-3 py-1 text-xs rounded-full font-medium ${getStatusColor(facture.statut)}`}>
-                      {facture.statut}
+                    <span className={`inline-flex px-3 py-1 text-xs rounded-full font-medium ${getStatusColor(facture.status)}`}>
+                      {getStatusLabel(facture.status)}
                     </span>
                   </TableCell>
                   <TableCell>
                     <div className="flex space-x-3">
-                      <Link 
+                      <Link
                         href={`/admin/sales/factures/${facture.id}`}
                         className="text-amber-600 hover:text-amber-700 text-sm font-medium"
                       >
                         Voir
                       </Link>
-                      <button className="text-green-600 hover:text-green-700 text-sm font-medium">
-                        PDF
-                      </button>
-                      {facture.statut !== 'Payée' && (
-                        <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                          Payer
-                        </button>
-                      )}
-                      <button className="text-red-600 hover:text-red-700 text-sm font-medium">
-                        Avoir
-                      </button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -231,9 +239,9 @@ export default function FacturesPage() {
             <div className="text-center py-12">
               <div className="text-stone-400 text-lg">Aucune facture trouvée</div>
               <p className="text-stone-500 mt-2">
-                {search || statusFilter !== 'all' 
-                  ? 'Ajustez vos filtres pour voir plus de résultats' 
-                  : 'Créez votre première facture à partir d\'un devis ou d\'une commande'
+                {search || statusFilter !== 'all'
+                  ? 'Ajustez vos filtres pour voir plus de résultats'
+                  : 'Créez votre première facture à partir d\'un devis'
                 }
               </p>
             </div>
@@ -244,15 +252,15 @@ export default function FacturesPage() {
   );
 }
 
-function StatCard({ 
-  title, 
-  value, 
-  icon, 
-  variant = 'default' 
-}: { 
-  title: string; 
-  value: string; 
-  icon: string; 
+function StatCard({
+  title,
+  value,
+  icon,
+  variant = 'default'
+}: {
+  title: string;
+  value: string;
+  icon: string;
   variant?: 'default' | 'success' | 'warning' | 'danger';
 }) {
   const variantStyles = {

@@ -6,23 +6,23 @@ import { ShoppingCart, Heart, Eye, Sparkles, Package, ArrowRight, Plus, Minus } 
 import { useCart } from '../../context/CartContext';
 
 interface ProductCardProps {
-  id: string; // ✅ Changed from number to string for UUID
+  id: string; // Product ID
   name: string;
   category: string;
   stock?: string;
   stockQuantity?: number;
   image: string;
   description?: string;
-  onViewDetails?: (productId: string) => void; // ✅ Changed parameter to string
+  onViewDetails?: (productId: string) => void;
   onExploreCategory?: (category: string) => void;
   buttonType?: 'cart' | 'explore';
 }
 
-const ProductCard = ({ 
+const ProductCard = ({
   id,
-  name, 
-  category, 
-  stock = "En stock", 
+  name,
+  category,
+  stock = "En stock",
   stockQuantity,
   image,
   description,
@@ -34,28 +34,30 @@ const ProductCard = ({
   const [isHovered, setIsHovered] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  const [isAdding, setIsAdding] = useState(false);
   const { addToCart } = useCart();
 
-  const handlePrimaryAction = () => {
+  const handlePrimaryAction = async () => {
     if (buttonType === 'explore' && onExploreCategory) {
       onExploreCategory(category);
     } else if (buttonType === 'cart') {
-      addToCart({
-        id,
+      setIsAdding(true);
+      const productData = {
+        product_id: id,
         name,
         category,
-        price: 0, // You can add actual prices later
         image,
         stock: stockQuantity || 0,
-      }, quantity);
-      
-      // Optional: Show success message
-      alert(`${quantity} ${name} ajouté au panier!`);
-      // Reset quantity after adding to cart
-      setQuantity(1);
+        sku: '',
+      };
+
+      console.log('🛒 Adding product to cart:', productData);
+
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate aync operation
+      addToCart(productData, quantity);
+      setIsAdding(false);
     }
   };
-
   const handleViewDetails = () => {
     onViewDetails?.(id);
   };
@@ -102,16 +104,20 @@ const ProductCard = ({
   const maxQuantity = stockQuantity || 999;
 
   return (
-    <div 
-      className="group relative bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-stone-200"
+    <div
+      className="group relative bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 border border-stone-200 hover-lift"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      style={{
+        transform: isHovered ? 'perspective(1000px) rotateX(2deg) rotateY(-2deg)' : 'perspective(1000px) rotateX(0) rotateY(0)',
+        transition: 'all 0.5s cubic-bezier(0.23, 1, 0.320, 1)'
+      }}
     >
       {/* Gradient Border Effect */}
-      <div className="absolute inset-0 bg-gradient-to-br from-amber-200 via-orange-200 to-amber-300 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl -z-10 blur-sm"></div>
-      
+      <div className="absolute inset-0 bg-linear-to-br from-amber-200 via-orange-200 to-amber-300 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl -z-10 blur-sm"></div>
+
       {/* Product Image Container */}
-      <div className="relative h-80 bg-gradient-to-br from-stone-50 to-neutral-100 overflow-hidden">
+      <div className="relative h-80 bg-linear-to-br from-stone-50 to-neutral-100 overflow-hidden">
         {/* Product Image with Next.js Optimization */}
         {!imageError && image ? (
           <Image
@@ -121,7 +127,7 @@ const ProductCard = ({
             className="object-cover transition-transform duration-700 group-hover:scale-110"
             onError={() => setImageError(true)}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            unoptimized // ✅ Added for external URLs from database
+            unoptimized
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-stone-100">
@@ -129,32 +135,29 @@ const ProductCard = ({
             <span className="sr-only">Image non disponible</span>
           </div>
         )}
-        
+
         {/* Hover Overlay */}
-        <div className={`absolute inset-0 bg-gradient-to-t from-stone-900/60 via-stone-900/20 to-transparent transition-opacity duration-300 ${
-          isHovered ? 'opacity-100' : 'opacity-0'
-        }`}>
-          {/* Quick Action Buttons */}
-          <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex gap-3 transition-all duration-300 ${
-            isHovered ? 'scale-100 opacity-100' : 'scale-75 opacity-0'
+        <div className={`absolute inset-0 bg-linear-to-t from-stone-900/60 via-stone-900/20 to-transparent transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'
           }`}>
-            <button 
+          {/* Quick Action Buttons */}
+          <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex gap-3 transition-all duration-300 ${isHovered ? 'scale-100 opacity-100' : 'scale-75 opacity-0'
+            }`}>
+            <button
               onClick={handleViewDetails}
               className="bg-white text-stone-800 p-3 rounded-full shadow-lg hover:bg-stone-100 transition-all duration-300 hover:scale-110 transform focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
               aria-label={`Voir les détails de ${name}`}
             >
               <Eye className="w-5 h-5" />
             </button>
-            <button 
+            <button
               onClick={(e) => {
                 e.stopPropagation();
                 setIsLiked(!isLiked);
               }}
-              className={`p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 transform focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 ${
-                isLiked 
-                  ? 'bg-red-500 text-white focus:ring-red-500' 
+              className={`p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 transform focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 ${isLiked
+                  ? 'bg-red-500 text-white focus:ring-red-500'
                   : 'bg-white text-stone-800 hover:bg-stone-100'
-              }`}
+                }`}
               aria-label={isLiked ? `Retirer ${name} des favoris` : `Ajouter ${name} aux favoris`}
             >
               <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
@@ -165,18 +168,16 @@ const ProductCard = ({
         {/* Stock Badge with Animation */}
         <div className="absolute top-4 right-4">
           <div className="relative">
-            <span className={`bg-white/95 backdrop-blur-sm px-4 py-2 rounded-full text-xs font-bold shadow-lg border inline-flex items-center gap-1.5 ${
-              stock === "En stock" 
-                ? "text-green-800 border-green-200" 
+            <span className={`glass px-4 py-2 rounded-full text-xs font-bold shadow-lg border inline-flex items-center gap-1.5 ${stock === "En stock"
+                ? "text-green-800 border-green-200 bg-green-50/80"
                 : stock === "Stock limité"
-                ? "text-amber-800 border-amber-200"
-                : "text-red-800 border-red-200"
-            }`}>
-              <span className={`w-2 h-2 rounded-full animate-pulse ${
-                stock === "En stock" ? "bg-green-500" :
-                stock === "Stock limité" ? "bg-amber-500" :
-                "bg-red-500"
-              }`}></span>
+                  ? "text-amber-800 border-amber-200 bg-amber-50/80"
+                  : "text-red-800 border-red-200 bg-red-50/80"
+              }`}>
+              <span className={`w-2 h-2 rounded-full animate-pulse ${stock === "En stock" ? "bg-green-500" :
+                  stock === "Stock limité" ? "bg-amber-500" :
+                    "bg-red-500"
+                }`}></span>
               {stock}
               {stockQuantity !== undefined && stockQuantity !== null && (
                 <span className="text-xs opacity-75 ml-1">
@@ -189,20 +190,20 @@ const ProductCard = ({
 
         {/* Category Tag */}
         <div className="absolute top-4 left-4">
-          <span className="bg-stone-800/90 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg">
+          <span className="glass-dark text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg">
             {category}
           </span>
         </div>
 
         {/* Decorative Corner Accent */}
-        <div className="absolute bottom-0 right-0 w-24 h-24 bg-gradient-to-tl from-stone-800/10 to-transparent rounded-tl-full"></div>
+        <div className="absolute bottom-0 right-0 w-24 h-24 bg-linear-to-tl from-stone-800/10 to-transparent rounded-tl-full"></div>
       </div>
-      
+
       {/* Product Info with Enhanced Styling */}
       <div className="p-6 bg-white relative">
         {/* Decorative Line */}
-        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-gradient-to-r from-transparent via-stone-300 to-transparent rounded-full"></div>
-        
+        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-linear-to-r from-transparent via-stone-300 to-transparent rounded-full"></div>
+
         <div className="mb-4 mt-2">
           <h3 className="text-xl font-bold text-stone-900 mb-1 group-hover:text-stone-700 transition-colors line-clamp-1">
             {name}
@@ -245,7 +246,7 @@ const ProductCard = ({
               >
                 <Minus className="w-4 h-4" />
               </button>
-              
+
               <input
                 type="number"
                 min="1"
@@ -255,7 +256,7 @@ const ProductCard = ({
                 className="w-12 text-center bg-transparent border-none focus:outline-none focus:ring-0 text-stone-900 font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 aria-label="Quantité"
               />
-              
+
               <button
                 onClick={incrementQuantity}
                 disabled={quantity >= maxQuantity}
@@ -272,20 +273,29 @@ const ProductCard = ({
             )}
           </div>
         )}
-        
+
         {/* Primary Action Button */}
-        <button 
+        <button
           onClick={handlePrimaryAction}
-          className="w-full bg-stone-800 text-white py-3.5 rounded-xl font-bold hover:bg-stone-900 transition-all duration-300 text-sm shadow-md hover:shadow-xl transform hover:scale-[1.02] group/btn flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={buttonType === 'cart' && stock === "Rupture de stock"}
+          disabled={(buttonType === 'cart' && stock === "Rupture de stock") || isAdding}
+          className="w-full bg-stone-800 text-white py-3.5 rounded-xl font-bold hover:bg-stone-900 transition-all duration-300 text-sm shadow-md hover:shadow-xl transform hover:scale-[1.02] group/btn flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden"
           aria-label={buttonType === 'explore' ? `Explorer la catégorie ${category}` : `Ajouter ${quantity} ${name} au panier`}
         >
-          {getButtonIcon()}
-          {getButtonText()}
-          {buttonType === 'cart' && stock !== "Rupture de stock" && (
-            <span className="bg-white/20 px-2 py-1 rounded text-xs">
-              {quantity}
-            </span>
+          {isAdding ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              Ajout en cours...
+            </>
+          ) : (
+            <>
+              {getButtonIcon()}
+              {getButtonText()}
+              {buttonType === 'cart' && stock !== "Rupture de stock" && (
+                <span className="bg-white/20 px-2 py-1 rounded text-xs">
+                  {quantity}
+                </span>
+              )}
+            </>
           )}
         </button>
 
@@ -301,11 +311,10 @@ const ProductCard = ({
       </div>
 
       {/* Shine Effect on Hover */}
-      <div className={`absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 transition-all duration-700 pointer-events-none ${
-        isHovered ? 'translate-x-full' : '-translate-x-full'
-      }`}></div>
+      <div className={`absolute inset-0 bg-linear-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 transition-all duration-700 pointer-events-none ${isHovered ? 'translate-x-full' : '-translate-x-full'
+        }`}></div>
     </div>
   );
 };
 
-export default ProductCard; 
+export default ProductCard;
