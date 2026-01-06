@@ -29,15 +29,17 @@ export default function DevisPage() {
     try {
       setLoading(true);
       const params: any = {};
-      
+
       if (statusFilter !== 'all') {
         params.status = statusFilter;
       }
 
       const response = await apiService.getDevis(params);
       const devisData = response.documents || response;
-      setDevisList(devisData);
-      
+      setDevisList(devisData.sort((a: any, b: any) =>
+        new Date(b.created_at || b.issue_date).getTime() - new Date(a.created_at || a.issue_date).getTime()
+      ));
+
       // Calculate stats
       setStats({
         total: devisData.length,
@@ -54,7 +56,7 @@ export default function DevisPage() {
 
   const handleAcceptDevis = async (devisId: string) => {
     if (!confirm('Accepter ce devis ?')) return;
-    
+
     try {
       await apiService.acceptDevis(devisId);
       loadDevis();
@@ -65,7 +67,7 @@ export default function DevisPage() {
 
   const handleConvertToFacture = async (devisId: string) => {
     if (!confirm('Convertir ce devis en facture ? Le stock sera réduit.')) return;
-    
+
     try {
       await apiService.convertDevisToFacture(devisId);
       loadDevis();
@@ -74,7 +76,7 @@ export default function DevisPage() {
     }
   };
 
-  const filteredDevis = devisList.filter(devis => 
+  const filteredDevis = devisList.filter(devis =>
     devis.client?.company_name?.toLowerCase().includes(search.toLowerCase()) ||
     devis.client?.first_name?.toLowerCase().includes(search.toLowerCase()) ||
     devis.client?.last_name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -94,14 +96,28 @@ export default function DevisPage() {
   };
 
   const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'en_attente': return 'En attente';
-      case 'brouillon': return 'Brouillon';
-      case 'accepte': return 'Accepté';
-      case 'refuse': return 'Refusé';
-      case 'facture': return 'Transformé en facture';
-      case 'annule': return 'Annulé';
-      default: return status;
+    const s = status?.toLowerCase();
+    switch (s) {
+      case 'en_attente':
+      case 'pending':
+        return 'En attente';
+      case 'brouillon':
+      case 'draft':
+        return 'Brouillon';
+      case 'accepte':
+      case 'accepted':
+        return 'Accepté';
+      case 'refuse':
+      case 'rejected':
+        return 'Refusé';
+      case 'facture':
+      case 'invoiced':
+        return 'Converti en facture';
+      case 'annule':
+      case 'cancelled':
+        return 'Annulé';
+      default:
+        return status;
     }
   };
 
@@ -228,7 +244,7 @@ export default function DevisPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex space-x-3">
-                      <Link 
+                      <Link
                         href={`/admin/sales/devis/${devis.id}`}
                         className="text-amber-600 hover:text-amber-700 text-sm font-medium"
                       >
@@ -236,7 +252,7 @@ export default function DevisPage() {
                       </Link>
                       {devis.status === 'en_attente' && (
                         <>
-                          <button 
+                          <button
                             onClick={() => handleAcceptDevis(devis.id)}
                             className="text-green-600 hover:text-green-700 text-sm font-medium"
                           >
@@ -245,7 +261,7 @@ export default function DevisPage() {
                         </>
                       )}
                       {devis.status === 'accepte' && (
-                        <button 
+                        <button
                           onClick={() => handleConvertToFacture(devis.id)}
                           className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                         >
@@ -263,8 +279,8 @@ export default function DevisPage() {
             <div className="text-center py-12">
               <div className="text-stone-400 text-lg">Aucun devis trouvé</div>
               <p className="text-stone-500 mt-2">
-                {search || statusFilter !== 'all' 
-                  ? 'Ajustez vos filtres pour voir plus de résultats' 
+                {search || statusFilter !== 'all'
+                  ? 'Ajustez vos filtres pour voir plus de résultats'
                   : 'Les devis créés depuis les commandes apparaîtront ici'
                 }
               </p>
@@ -276,15 +292,15 @@ export default function DevisPage() {
   );
 }
 
-function StatCard({ 
-  title, 
-  value, 
-  icon, 
-  variant = 'default' 
-}: { 
-  title: string; 
-  value: string; 
-  icon: string; 
+function StatCard({
+  title,
+  value,
+  icon,
+  variant = 'default'
+}: {
+  title: string;
+  value: string;
+  icon: string;
   variant?: 'default' | 'success' | 'warning' | 'info';
 }) {
   const variantStyles = {

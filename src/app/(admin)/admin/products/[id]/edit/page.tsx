@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Button, Input, Card, Textarea, Select } from '../../../../../components/ui';
+import { Button, Input, Card, Textarea, Select, ImageUpload } from '../../../../../components/ui';
 import { apiService } from '../../../../../lib/api';
 import { Product } from '../../../../../../types';
 
@@ -28,6 +28,14 @@ export default function EditProductPage() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // File states
+  const [mainImageFile, setMainImageFile] = useState<File | null>(null);
+  const [additionalImageFiles, setAdditionalImageFiles] = useState<File[]>([]);
+
+  // Existing images state
+  const [productMainImage, setProductMainImage] = useState<string | null>(null);
+  const [productAdditionalImages, setProductAdditionalImages] = useState<string[]>([]);
+
   const [formData, setFormData] = useState({
     // Basic Information
     name: '',
@@ -35,10 +43,10 @@ export default function EditProductPage() {
     short_description: '',
     sku: '',
     barcode: '',
-    
+
     // Categorization
     category_id: '',
-    
+
     // Hair-Specific Attributes
     hair_type: '',
     hair_texture: '',
@@ -46,34 +54,33 @@ export default function EditProductPage() {
     hair_color: '',
     hair_origin: '',
     hair_quality: '',
-    
+
     // Packaging
     weight_grams: '' as string | number,
     bundle_pieces: '1',
     package_dimensions: '',
-    
+
     // Inventory
     stock_quantity: '0',
     min_stock_level: '5',
     max_stock_level: '' as string | number,
-    
+
     // Pricing
     cost_price: '' as string | number,
     wholesale_price: '' as string | number,
     retail_price: '' as string | number,
-    
+
     // Supplier
     supplier_id: '',
     supplier_sku: '',
-    
+
     // Status & Visibility
     is_active: true,
     is_featured: false,
     is_best_seller: false,
     is_new_arrival: true,
-    
-    // Media & SEO
-    main_image: '',
+
+    // SEO
     meta_title: '',
     meta_description: '',
     search_keywords: ''
@@ -87,14 +94,18 @@ export default function EditProductPage() {
       try {
         setInitialLoading(true);
         const [productData, categoriesData, suppliersData] = await Promise.all([
-          apiService.getProduct(productId),
-          apiService.getCategories(),
-          apiService.getSuppliers()
+          apiService.getProductAdmin(productId),
+          apiService.getCategories(), // Note: In a real app, we might need pagination handling here
+          apiService.getSuppliers({ limit: 1000 })
         ]);
 
         setProduct(productData);
         setCategories(categoriesData.categories || []);
         setSuppliers(suppliersData.suppliers || []);
+
+        // Set existing images
+        setProductMainImage(productData.main_image || null);
+        setProductAdditionalImages(productData.additional_images || []);
 
         // Populate form with existing data
         setFormData({
@@ -103,7 +114,7 @@ export default function EditProductPage() {
           short_description: productData.short_description || '',
           sku: productData.sku || '',
           barcode: productData.barcode || '',
-          category_id: productData.category_id || '',
+          category_id: productData.category_id || productData.category?.id || '',
           hair_type: productData.hair_type || '',
           hair_texture: productData.hair_texture || '',
           hair_length: productData.hair_length || '',
@@ -116,16 +127,15 @@ export default function EditProductPage() {
           stock_quantity: productData.stock_quantity?.toString() || '0',
           min_stock_level: productData.min_stock_level?.toString() || '5',
           max_stock_level: productData.max_stock_level || '',
-          cost_price: productData.cost_price || '',
-          wholesale_price: productData.wholesale_price || '',
-          retail_price: productData.retail_price || '',
-          supplier_id: productData.supplier_id || '',
+          cost_price: productData.cost_price !== undefined && productData.cost_price !== null ? productData.cost_price : '',
+          wholesale_price: productData.wholesale_price !== undefined && productData.wholesale_price !== null ? productData.wholesale_price : '',
+          retail_price: productData.retail_price !== undefined && productData.retail_price !== null ? productData.retail_price : '',
+          supplier_id: productData.supplier_id || productData.supplier?.id || '',
           supplier_sku: productData.supplier_sku || '',
           is_active: productData.is_active !== undefined ? productData.is_active : true,
           is_featured: productData.is_featured || false,
           is_best_seller: productData.is_best_seller || false,
           is_new_arrival: productData.is_new_arrival !== undefined ? productData.is_new_arrival : true,
-          main_image: productData.main_image || '',
           meta_title: productData.meta_title || '',
           meta_description: productData.meta_description || '',
           search_keywords: productData.search_keywords || ''
@@ -143,11 +153,13 @@ export default function EditProductPage() {
   }, [productId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
+    // ... existing submit logic ...
+    // (omitted for brevity in this replace block, handled by context)
     e.preventDefault();
     setLoading(true);
     setErrors({});
 
-    // Validation
+    // ... validation ...
     const newErrors: Record<string, string> = {};
     if (!formData.name.trim()) newErrors.name = 'Le nom est obligatoire';
     if (!formData.category_id) newErrors.category_id = 'La catégorie est obligatoire';
@@ -161,7 +173,7 @@ export default function EditProductPage() {
     }
 
     try {
-      // Prepare data for API - convert strings to proper types
+      // 1. Update Product Data
       const submitData: any = {
         // Basic Information
         name: formData.name.trim(),
@@ -169,10 +181,10 @@ export default function EditProductPage() {
         short_description: formData.short_description.trim() || null,
         sku: formData.sku.trim(),
         barcode: formData.barcode.trim() || null,
-        
+
         // Categorization
         category_id: formData.category_id,
-        
+
         // Hair-Specific Attributes
         hair_type: formData.hair_type.trim() || null,
         hair_texture: formData.hair_texture.trim() || null,
@@ -180,34 +192,33 @@ export default function EditProductPage() {
         hair_color: formData.hair_color.trim() || null,
         hair_origin: formData.hair_origin.trim() || null,
         hair_quality: formData.hair_quality.trim() || null,
-        
+
         // Packaging
         weight_grams: formData.weight_grams ? Number(formData.weight_grams) : null,
         bundle_pieces: Number(formData.bundle_pieces) || 1,
         package_dimensions: formData.package_dimensions.trim() || null,
-        
+
         // Inventory
         stock_quantity: Number(formData.stock_quantity) || 0,
         min_stock_level: Number(formData.min_stock_level) || 5,
         max_stock_level: formData.max_stock_level ? Number(formData.max_stock_level) : null,
-        
+
         // Pricing
         cost_price: formData.cost_price ? Number(formData.cost_price) : null,
         wholesale_price: formData.wholesale_price ? Number(formData.wholesale_price) : null,
         retail_price: formData.retail_price ? Number(formData.retail_price) : null,
-        
+
         // Supplier
         supplier_id: formData.supplier_id,
         supplier_sku: formData.supplier_sku.trim() || null,
-        
+
         // Status & Visibility
         is_active: formData.is_active,
         is_featured: formData.is_featured,
         is_best_seller: formData.is_best_seller,
         is_new_arrival: formData.is_new_arrival,
-        
-        // Media & SEO
-        main_image: formData.main_image.trim() || null,
+
+        // SEO
         meta_title: formData.meta_title.trim() || null,
         meta_description: formData.meta_description.trim() || null,
         search_keywords: formData.search_keywords.trim() || null
@@ -215,6 +226,32 @@ export default function EditProductPage() {
 
       console.log('📤 Updating product data:', submitData);
       await apiService.updateProduct(productId, submitData);
+
+      // 2. Upload New Images if any
+      // Upload main image
+      if (mainImageFile) {
+        console.log('📤 Uploading new main image:', mainImageFile.name);
+        try {
+          await apiService.uploadMainImage(productId, mainImageFile);
+          console.log('✅ Main image uploaded successfully');
+        } catch (err) {
+          console.error('❌ Error uploading main image:', err);
+        }
+      }
+
+      // Upload additional images
+      console.log('Checking for additional images:', additionalImageFiles);
+      if (additionalImageFiles.length > 0) {
+        console.log(`📤 Uploading ${additionalImageFiles.length} additional images...`);
+        try {
+          const result = await apiService.uploadAdditionalImages(productId, additionalImageFiles);
+          console.log('✅ Additional images uploaded successfully:', result);
+        } catch (err) {
+          console.error('❌ Error uploading additional images:', err);
+        }
+      } else {
+        console.log('ℹ️ No additional images to upload');
+      }
 
       // Redirect to product detail page
       router.push(`/admin/products/${productId}`);
@@ -230,6 +267,23 @@ export default function EditProductPage() {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const handleDeleteImage = async (imagePath: string, isMain: boolean) => {
+    if (!window.confirm('Voulez-vous vraiment supprimer cette image ?')) return;
+
+    try {
+      await apiService.deleteProductImage(productId, imagePath);
+
+      if (isMain) {
+        setProductMainImage(null);
+      } else {
+        setProductAdditionalImages(prev => prev.filter(p => p !== imagePath));
+      }
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      alert('Erreur lors de la suppression de l\'image');
     }
   };
 
@@ -370,6 +424,32 @@ export default function EditProductPage() {
                     value={formData.retail_price}
                     onChange={(e) => handleChange('retail_price', e.target.value)}
                     placeholder="65.00"
+                  />
+                </div>
+              </div>
+            </Card>
+
+            <Card>
+              <div className="p-6">
+                <h2 className="text-lg font-semibold text-stone-800 mb-4">Images</h2>
+                <div className="space-y-6">
+                  <ImageUpload
+                    label="Image Principale"
+                    files={mainImageFile ? [mainImageFile] : []}
+                    onFilesChange={(files: File[]) => setMainImageFile(files[0] || null)}
+                    existingImages={productMainImage ? [productMainImage] : []}
+                    onDeleteExisting={(path: string) => handleDeleteImage(path, true)}
+                    helpText="Cette image sera utilisée comme miniature partout."
+                  />
+
+                  <ImageUpload
+                    label="Images Supplémentaires"
+                    files={additionalImageFiles}
+                    onFilesChange={setAdditionalImageFiles}
+                    multiple
+                    existingImages={productAdditionalImages}
+                    onDeleteExisting={(path: string) => handleDeleteImage(path, false)}
+                    helpText="Ajoutez d'autres vues du produit."
                   />
                 </div>
               </div>
@@ -576,12 +656,6 @@ export default function EditProductPage() {
                 onChange={(e) => handleChange('search_keywords', e.target.value)}
                 placeholder="cheveux, brésilien, 24 pouces, naturel"
                 helpText="Séparez les mots-clés par des virgules"
-              />
-              <Input
-                label="Image principale (URL)"
-                value={formData.main_image}
-                onChange={(e) => handleChange('main_image', e.target.value)}
-                placeholder="https://example.com/image.jpg"
               />
             </div>
           </div>

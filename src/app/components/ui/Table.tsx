@@ -29,12 +29,12 @@ export const TableBody: React.FC<{ children: React.ReactNode }> = ({ children })
   </tbody>
 );
 
-export const TableRow: React.FC<{ 
-  children: React.ReactNode; 
-  onClick?: () => void; 
-  className?: string 
+export const TableRow: React.FC<{
+  children: React.ReactNode;
+  onClick?: () => void;
+  className?: string
 }> = ({ children, onClick, className = '' }) => (
-  <tr 
+  <tr
     onClick={onClick}
     className={`transition-colors ${onClick ? 'cursor-pointer hover:bg-stone-50' : ''} ${className}`}
   >
@@ -42,20 +42,21 @@ export const TableRow: React.FC<{
   </tr>
 );
 
-export const TableHead: React.FC<{ children: React.ReactNode; className?: string }> = ({ 
-  children, 
-  className = '' 
+export const TableHead: React.FC<{ children: React.ReactNode; className?: string }> = ({
+  children,
+  className = ''
 }) => (
   <th className={`px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase tracking-wider ${className}`}>
     {children}
   </th>
 );
 
-export const TableCell: React.FC<{ children: React.ReactNode; className?: string }> = ({ 
-  children, 
-  className = '' 
+export const TableCell: React.FC<{ children: React.ReactNode; className?: string; colSpan?: number }> = ({
+  children,
+  className = '',
+  colSpan
 }) => (
-  <td className={`px-4 py-4 text-sm text-stone-700 ${className}`}>
+  <td colSpan={colSpan} className={`px-4 py-4 text-sm text-stone-700 ${className}`}>
     {children}
   </td>
 );

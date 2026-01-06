@@ -3,7 +3,8 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { FileText, ArrowLeft, Printer, FileCheck } from 'lucide-react';
+import { FileText, ArrowLeft, Printer, FileCheck, Download } from 'lucide-react';
+import { ConversionModal } from '../../../../../components/features/devis/ConversionModal';
 import { Card } from '../../../../../components/ui/Card';
 import { Button } from '../../../../../components/ui/Button';
 import { apiService } from '../../../../../lib/api';
@@ -14,6 +15,8 @@ export default function DevisDetailPage({ params }: { params: Promise<{ id: stri
     const router = useRouter();
     const [devis, setDevis] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [isConversionModalOpen, setIsConversionModalOpen] = useState(false);
+    const [isSubmittingConversion, setIsSubmittingConversion] = useState(false);
 
     useEffect(() => {
         loadDevis();
@@ -33,16 +36,69 @@ export default function DevisDetailPage({ params }: { params: Promise<{ id: stri
         }
     };
 
-    const handleConvertToFacture = async () => {
-        if (!confirm('Convertir ce devis en facture ?')) return;
+    const handleDownloadPdf = async () => {
+        try {
+            const blob = await apiService.downloadPdf(resolvedParams.id, 'devis');
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `DEVIS_${devis.devis_number}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (error) {
+            console.error('Error downloading PDF:', error);
+            notificationService.error('Erreur', 'Impossible de télécharger le PDF');
+        }
+    };
+
+    const handleConvertToFacture = async (paymentTerms?: any) => {
+        // Step 1: Check Expiration
+        if (devis.valid_until) {
+            const expiryDate = new Date(devis.valid_until);
+            if (expiryDate < new Date()) {
+                notificationService.error('Erreur', 'Ce devis a expiré et ne peut plus être converti.');
+                return;
+            }
+        }
+
+        // Step 2: Open Modal to select Payment Terms if not provided
+        if (!paymentTerms) {
+            setIsConversionModalOpen(true);
+            return;
+        }
 
         try {
-            await apiService.convertDevisToFacture(resolvedParams.id);
+            setIsSubmittingConversion(true);
+            await apiService.convertDevisToFacture(resolvedParams.id, { payment_terms: paymentTerms });
             notificationService.success('Succès', 'Devis converti en facture');
+            setIsConversionModalOpen(false);
             router.push('/admin/sales/factures');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error converting devis:', error);
-            notificationService.error('Erreur', 'Échec de la conversion');
+            if (error.message?.includes('expired') || error.message?.includes('expiré')) {
+                notificationService.error('Devis Expiré', 'Le backend signale que ce devis est expiré.');
+            } else {
+                notificationService.error('Erreur', error.message || 'Échec de la conversion');
+            }
+        } finally {
+            setIsSubmittingConversion(false);
+        }
+    };
+
+    const handleRejectDevis = async () => {
+        const reason = prompt('Raison du refus:');
+        if (!reason) return;
+
+        try {
+            // Re-using updateDevis if no specific reject endpoint, or if backend handles it via update
+            await apiService.updateDevis(resolvedParams.id, { status: 'refuse', notes: `${devis.notes || ''}\n\nRaison du refus: ${reason}` });
+            notificationService.success('Succès', 'Devis marqué comme refusé');
+            loadDevis();
+        } catch (error) {
+            console.error('Error rejecting devis:', error);
+            notificationService.error('Erreur', 'Impossible de refuser le devis');
         }
     };
 
@@ -60,7 +116,7 @@ export default function DevisDetailPage({ params }: { params: Promise<{ id: stri
         if (s === 'en_attente' || s === 'pending') return 'En attente';
         if (s === 'accepte' || s === 'accepted') return 'Accepté';
         if (s === 'refuse' || s === 'rejected') return 'Refusé';
-        if (s === 'facture' || s === 'invoiced') return 'Facturé';
+        if (s === 'facture' || s === 'invoiced') return 'Converti en facture';
         return status;
     };
 
@@ -96,19 +152,19 @@ export default function DevisDetailPage({ params }: { params: Promise<{ id: stri
     return (
         <div className="p-6 space-y-6">
             {/* Header */}
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
                 <div>
                     <div className="flex items-center gap-3">
                         <Link href="/admin/sales/devis" className="text-stone-900 hover:text-amber-600 font-medium">
                             <ArrowLeft className="w-5 h-5" />
                         </Link>
-                        <h1 className="text-3xl font-bold text-stone-900">Devis {devis.devis_number}</h1>
+                        <h1 className="text-2xl md:text-3xl font-bold text-stone-900">Devis {devis.devis_number}</h1>
                     </div>
-                    <div className="flex items-center gap-3 mt-2">
+                    <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-2">
                         <span className={`inline-flex px-3 py-1 text-sm rounded-full font-medium ${getStatusColor(devis.status)}`}>
                             {getStatusLabel(devis.status)}
                         </span>
-                        <span className="text-stone-700 font-medium">
+                        <span className="text-stone-700 font-medium text-sm md:text-base">
                             {new Date(devis.created_at).toLocaleDateString('fr-FR', {
                                 day: 'numeric',
                                 month: 'long',
@@ -116,23 +172,28 @@ export default function DevisDetailPage({ params }: { params: Promise<{ id: stri
                             })}
                         </span>
                         {devis.order_id && (
-                            <Link href={`/admin/orders/${devis.order_id}`} className="text-sm text-blue-600 hover:underline flex items-center gap-1">
+                            <Link href={`/admin/orders/${devis.order_id}`} className="text-xs md:text-sm text-blue-600 hover:underline flex items-center gap-1">
                                 (Commande liée)
                             </Link>
                         )}
                     </div>
                 </div>
 
-                <div className="flex gap-3">
-                    <Button variant="secondary" onClick={() => window.print()}>
-                        <Printer className="w-4 h-4 mr-2" />
-                        Imprimer
+                <div className="flex flex-wrap gap-2 md:gap-3">
+                    <Button variant="secondary" onClick={handleDownloadPdf} className="flex-1 sm:flex-none">
+                        <Download className="w-4 h-4 mr-2" />
+                        Télécharger PDF
                     </Button>
-                    {devis.status !== 'facture' && devis.status !== 'refuse' && (
-                        <Button onClick={handleConvertToFacture} variant="primary">
-                            <FileCheck className="w-4 h-4 mr-2" />
-                            Convertir en Facture
-                        </Button>
+                    {devis.status !== 'facture' && devis.status !== 'refuse' && devis.status !== 'rejected' && (
+                        <>
+                            <Button onClick={handleRejectDevis} variant="danger" className="flex-1 sm:flex-none">
+                                Refuser le Devis
+                            </Button>
+                            <Button onClick={() => handleConvertToFacture()} variant="primary" className="flex-1 sm:flex-none w-full sm:w-auto">
+                                <FileCheck className="w-4 h-4 mr-2" />
+                                Convertir en Facture
+                            </Button>
+                        </>
                     )}
                 </div>
             </div>
@@ -230,6 +291,20 @@ export default function DevisDetailPage({ params }: { params: Promise<{ id: stri
                     </Card>
                 </div>
             </div>
+
+            <ConversionModal
+                isOpen={isConversionModalOpen}
+                onClose={() => setIsConversionModalOpen(false)}
+                onConfirm={(terms) => handleConvertToFacture(terms)}
+                isSubmitting={isSubmittingConversion}
+            />
+
+            <ConversionModal
+                isOpen={isConversionModalOpen}
+                onClose={() => setIsConversionModalOpen(false)}
+                onConfirm={(terms) => handleConvertToFacture(terms)}
+                isSubmitting={isSubmittingConversion}
+            />
         </div>
     );
 }

@@ -36,6 +36,27 @@ select {
 }
 
 /* ============================================ */
+/* CUSTOM SCROLLBARS */
+/* ============================================ */
+.gallery-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+
+.gallery-scroll::-webkit-scrollbar-track {
+  background: #f5f5f4;
+  border-radius: 4px;
+}
+
+.gallery-scroll::-webkit-scrollbar-thumb {
+  background: #d6d3d1;
+  border-radius: 4px;
+}
+
+.gallery-scroll::-webkit-scrollbar-thumb:hover {
+  background: #a8a29e;
+}
+
+/* ============================================ */
 /* MODERN ANIMATION KEYFRAMES */
 /* ============================================ */
 
@@ -45,6 +66,7 @@ select {
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -56,6 +78,7 @@ select {
     opacity: 0;
     transform: translateY(-30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -67,6 +90,7 @@ select {
     opacity: 0;
     transform: translateX(-30px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -78,6 +102,7 @@ select {
     opacity: 0;
     transform: translateX(30px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -89,6 +114,7 @@ select {
     opacity: 0;
     transform: translateX(100%);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -100,6 +126,7 @@ select {
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -112,6 +139,7 @@ select {
     opacity: 0;
     transform: scale(0.95) translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -123,12 +151,15 @@ select {
     opacity: 0;
     transform: scale(0.3);
   }
+
   50% {
     transform: scale(1.05);
   }
+
   70% {
     transform: scale(0.97);
   }
+
   100% {
     opacity: 1;
     transform: scale(1);
@@ -140,15 +171,19 @@ select {
   0% {
     background-position: -1000px 0;
   }
+
   100% {
     background-position: 1000px 0;
   }
 }
 
 @keyframes skeleton-pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }
@@ -160,6 +195,7 @@ select {
     transform: scale(0);
     opacity: 1;
   }
+
   100% {
     transform: scale(4);
     opacity: 0;
@@ -168,9 +204,12 @@ select {
 
 /* Bounce Animation */
 @keyframes bounce-subtle {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-5px);
   }
@@ -178,10 +217,13 @@ select {
 
 /* Pulse Animation */
 @keyframes pulse-subtle {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }
+
   50% {
     opacity: 0.9;
     transform: scale(1.02);
@@ -193,6 +235,7 @@ select {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -204,6 +247,7 @@ select {
     opacity: 1;
     transform: translateX(0);
   }
+
   to {
     opacity: 0;
     transform: translateX(100%);
@@ -305,12 +349,10 @@ select {
 
 /* Skeleton Loading */
 .skeleton {
-  background: linear-gradient(
-    90deg,
-    #f5f5f4 0%,
-    #e7e5e4 50%,
-    #f5f5f4 100%
-  );
+  background: linear-gradient(90deg,
+      #f5f5f4 0%,
+      #e7e5e4 50%,
+      #f5f5f4 100%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }

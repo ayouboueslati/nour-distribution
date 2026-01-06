@@ -1,4 +1,13 @@
 const API_BASE_URL = 'http://localhost:8000/api/v1';
+export const STATIC_BASE_URL = 'http://localhost:8000/static/';
+
+export function getProductImageUrl(imagePath?: string | null): string {
+  if (!imagePath) return '/images/products/placeholder.jpg';
+  if (imagePath.startsWith('http')) return imagePath;
+  if (imagePath.startsWith('/images/')) return imagePath; // Local assets
+  return `${STATIC_BASE_URL}${imagePath}`;
+}
+
 import { notificationService } from "./notifications";
 
 class ApiService {
@@ -10,13 +19,20 @@ class ApiService {
 
     const token = localStorage.getItem('access_token');
 
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+      ...(options.headers as Record<string, string>),
+    };
+
+    // If body is FormData, let browser set Content-Type with boundary
+    if (options.body instanceof FormData) {
+      delete headers['Content-Type'];
+    }
+
     const config: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
-        ...options.headers,
-      },
       ...options,
+      headers,
     };
 
     try {
@@ -402,6 +418,10 @@ class ApiService {
     return this.request(`/products/${productId}`);
   }
 
+  async getProductAdmin(productId: string) {
+    return this.request(`/products/admin/${productId}`);
+  }
+
   async createProduct(productData: any) {
     try {
       const result = await this.request('/products', {
@@ -451,6 +471,57 @@ class ApiService {
 
       return result;
     } catch (error) {
+      throw error;
+    }
+  }
+
+  async uploadMainImage(productId: string, file: File) {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const result = await this.request(`/products/${productId}/upload-main-image`, {
+        method: 'POST',
+        body: formData,
+        // Content-Type header is not set manually for FormData, browser sets it with boundary
+      });
+
+      return result;
+    } catch (error) {
+      console.error('Error uploading main image:', error);
+      throw error;
+    }
+  }
+
+  async uploadAdditionalImages(productId: string, files: File[]) {
+    try {
+      const formData = new FormData();
+      files.forEach(file => {
+        formData.append('files', file);
+      });
+
+      const result = await this.request(`/products/${productId}/upload-additional-images`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      return result;
+    } catch (error) {
+      console.error('Error uploading additional images:', error);
+      throw error;
+    }
+  }
+
+  async deleteProductImage(productId: string, imagePath: string) {
+    try {
+      // Pass image_path as a query parameter
+      const result = await this.request(`/products/${productId}/images?image_path=${encodeURIComponent(imagePath)}`, {
+        method: 'DELETE',
+      });
+
+      return result;
+    } catch (error) {
+      console.error('Error deleting product image:', error);
       throw error;
     }
   }
@@ -595,6 +666,48 @@ class ApiService {
     return this.request(`/inventory/turnover-analysis?days=${days}`);
   }
 
+  async adjustStock(payload: { product_id: string; real_quantity: number; reason: string; note?: string }) {
+    try {
+      const result = await this.request('/inventory/adjust', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+
+      notificationService.success(
+        'Stock ajusté',
+        'L\'ajustement de stock a été enregistré'
+      );
+
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // ============ INVENTORY ANALYTICS (NEW) ============
+  async getStockAnalyticsOverview() {
+    return this.request('/inventory/analytics/overview');
+  }
+
+  async getStockMovementTrends(params?: { days?: number }) {
+    const queryParams = new URLSearchParams();
+    if (params?.days) queryParams.append('days', params.days.toString());
+    const query = queryParams.toString();
+    return this.request(`/inventory/analytics/trends?${query}`);
+  }
+
+  async getStockTurnoverAnalysis(params?: { days?: number; limit?: number }) {
+    const queryParams = new URLSearchParams();
+    if (params?.days) queryParams.append('days', params.days.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    const query = queryParams.toString();
+    return this.request(`/inventory/analytics/turnover?${query}`);
+  }
+
+  async getStockAgingReport() {
+    return this.request('/inventory/analytics/aging');
+  }
+
   // ============ ORDER MANAGEMENT METHODS ============
   async getOrders(params?: {
     skip?: number;
@@ -624,6 +737,173 @@ class ApiService {
 
   async getInvoicesByOrderId(orderId: string) {
     return this.request(`/documents/factures/by-order/${orderId}`);
+  }
+
+  // ============ DEVIS TRACKING (NEW) ============
+  async getOrderDevisList(orderId: string, params?: {
+    include_versions?: boolean;
+    skip?: number;
+    limit?: number;
+  }) {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          queryParams.append(key, value.toString());
+        }
+      });
+    }
+    const query = queryParams.toString();
+    return this.request(`/documents/orders/${orderId}/devis?${query}`);
+  }
+
+  async getFactureSourceDevis(factureId: string) {
+    return this.request(`/documents/factures/${factureId}/source-devis`, {
+      skipGlobalErrorHandler: true // Handle 404 gracefully for factures without source devis
+    });
+  }
+
+  async getOrderDevisTimeline(orderId: string) {
+    return this.request(`/documents/orders/${orderId}/devis/timeline`);
+  }
+
+  // ============ DELIVERY TRACKING (NEW) ============
+  async getDeliveries(params?: {
+    skip?: number;
+    limit?: number;
+    status?: string;
+    order_id?: string;
+  }) {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          queryParams.append(key, value.toString());
+        }
+      });
+    }
+    const query = queryParams.toString();
+    return this.request(`/deliveries?${query}`);
+  }
+
+  async createDelivery(payload: any) {
+    try {
+      const result = await this.request('/deliveries', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+
+      notificationService.success(
+        'Livraison créée',
+        'Le bon de livraison a été créé avec succès'
+      );
+
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getDeliveriesByOrder(orderId: string) {
+    return this.request(`/deliveries/by-order/${orderId}`);
+  }
+
+  async updateDeliveryStatus(deliveryId: string, status: string) {
+    try {
+      const result = await this.request(`/deliveries/${deliveryId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      });
+
+      notificationService.success(
+        'Statut mis à jour',
+        `Le statut de la livraison a été mis à jour: ${status}`
+      );
+
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // ============ ANALYTICS ============
+  async getAnalyticsDashboard() {
+    return this.request('/analytics/dashboard');
+  }
+
+  async getAnalyticsSales(period: 'daily' | 'weekly' | 'monthly' = 'monthly') {
+    return this.request(`/analytics/sales?period=${period}`);
+  }
+
+  async getAnalyticsStock() {
+    return this.request('/analytics/stock');
+  }
+
+  async getFinancialAnalytics(period: 'week' | 'month' | 'quarter' | 'year' = 'month') {
+    return this.request(`/analytics/financials?period=${period}`);
+  }
+
+  async getExpenseBreakdown() {
+    return this.request('/analytics/expenses/breakdown');
+  }
+
+  async getComparisonData() {
+    return this.request('/analytics/comparison');
+  }
+
+  async getSmartInsights() {
+    return this.request('/analytics/insights');
+  }
+
+  // ============ CHARGES ============
+  async getCharges() {
+    return this.request('/charges/');
+  }
+
+  async getCharge(id: string) {
+    return this.request(`/charges/${id}`);
+  }
+
+  async createCharge(data: any) {
+    return this.request('/charges/', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async updateCharge(id: string, data: any) {
+    return this.request(`/charges/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async deleteCharge(id: string) {
+    return this.request(`/charges/${id}`, {
+      method: 'DELETE'
+    });
+  }
+
+  async getAnalyticsVisualizations() {
+    return this.request('/analytics/visualizations');
+  }
+
+  async createOrder(orderData: any) {
+    try {
+      const result = await this.request('/orders', {
+        method: 'POST',
+        body: JSON.stringify(orderData),
+      });
+
+      notificationService.success(
+        'Commande créée',
+        'La commande a été créée avec succès'
+      );
+
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async updateOrderPricing(orderId: string, pricingData: any) {
@@ -756,7 +1036,7 @@ class ApiService {
 
       notificationService.success(
         'Commande rejetée',
-        'La commande a été rejetée'
+        'La commande a été rejetée avec succès'
       );
 
       return result;
@@ -841,10 +1121,11 @@ class ApiService {
     }
   }
 
-  async convertDevisToFacture(devisId: string) {
+  async convertDevisToFacture(devisId: string, data: any = {}) {
     try {
       const result = await this.request(`/documents/devis/${devisId}/convert-to-facture`, {
         method: 'POST',
+        body: JSON.stringify(data),
       });
 
       notificationService.success(
@@ -961,11 +1242,14 @@ class ApiService {
     return this.request(`/documents/avoirs/${avoirId}`);
   }
 
-  async createAvoirFromFacture(avoirData: any) {
+  async createAvoirFromFacture(factureId: string, avoirData: any) {
     try {
       const result = await this.request('/documents/avoirs/from-facture', {
         method: 'POST',
-        body: JSON.stringify(avoirData),
+        body: JSON.stringify({
+          ...avoirData,
+          facture_id: factureId
+        }),
       });
 
       notificationService.success(
@@ -1152,6 +1436,43 @@ class ApiService {
   // ============ PUBLIC TRACKING ============
   async trackOrder(orderNumber: string) {
     return this.request(`/public/track/${orderNumber}`);
+  }
+
+  async getAvoirById(avoirId: string) {
+    return this.request(`/documents/avoirs/${avoirId}`);
+  }
+
+  // ============ PDF DOWNLOAD ============
+  async downloadPdf(p0: string, type: 'facture' | 'devis' | 'avoir') {
+    let endpoint = '';
+    switch (type) {
+      case 'facture':
+        endpoint = `/documents/factures/${p0}/pdf`;
+        break;
+      case 'devis':
+        endpoint = `/documents/devis/${p0}/pdf`;
+        break;
+      case 'avoir':
+        endpoint = `/documents/avoirs/${p0}/pdf`;
+        break;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors du téléchargement du PDF');
+      }
+
+      return await response.blob();
+    } catch (error) {
+      throw error;
+    }
   }
 
   async verifyOrderAccess(orderNumber: string, verificationCode: string) {

@@ -31,6 +31,11 @@ export interface B2BClient {
   dernierAchat: string;
   devisEnCours: number;
   conditionsPaiement: string;
+
+  // New fields
+  credit_limit?: number;
+  current_balance?: number;
+  is_suspended?: boolean;
 }
 
 export type Client = B2CClient | B2BClient;

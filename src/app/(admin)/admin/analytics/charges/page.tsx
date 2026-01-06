@@ -1,147 +1,128 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Card, Button, Select, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, Input } from "../../../../components/ui/index";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Card, Button, Select, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, Input } from "@/app/components/ui/index";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { apiService } from '@/app/lib/api';
+import { Charge, ChargeCategory } from '@/types/analytics';
+import { notificationService } from '@/app/lib/notifications';
 
-// Types
-interface Charge {
-    id: string;
-    date: string;
-    category: string;
-    description: string;
-    amount: number;
-    type: 'fixed' | 'variable';
-    recurrence?: 'once' | 'daily' | 'weekly' | 'monthly' | 'yearly';
-    supplier?: string;
-    validated: boolean;
-}
-
-const chargeCategories = [
-    'Achats Produits',
-    'Frais Transport',
-    'Carburant (Gaz)',
-    'Loyer & Utilities',
-    'Salaires & Honoraires',
-    'Marketing & Publicité',
-    'Maintenance & Réparations',
-    'Frais Bancaires',
-    'Impôts & Taxes',
-    'Assurances',
-    'Divers'
-];
-
-const suppliers = [
-    'Beauty Hair China',
-    'Premium Locks Ltd',
-    'African Hair Import',
-    'Silky Strands Co',
-    'Autre'
-];
-
-
-// chart data and component to the charges page
-const monthlyChargesData = [
-    { month: 'Jan', charges: 26500, manual: 4500 },
-    { month: 'Fév', charges: 24200, manual: 3800 },
-    { month: 'Mar', charges: 28750, manual: 5200 },
-    { month: 'Avr', charges: 25500, manual: 4100 },
-    { month: 'Mai', charges: 30200, manual: 4800 },
-    { month: 'Juin', charges: 27800, manual: 4300 }
-];
-
-// Mock data
-const initialCharges: Charge[] = [
-    {
-        id: 'CHG-001',
-        date: '2025-01-15',
-        category: 'Carburant (Gaz)',
-        description: 'Plein essence - Livraison clients',
-        amount: 350,
-        type: 'variable',
-        recurrence: 'weekly',
-        validated: true
-    },
-    {
-        id: 'CHG-002',
-        date: '2025-01-10',
-        category: 'Achats Produits',
-        description: 'Commande cheveux brésilien - Beauty Hair',
-        amount: 8500,
-        type: 'variable',
-        supplier: 'Beauty Hair China',
-        validated: true
-    },
-    {
-        id: 'CHG-003',
-        date: '2025-01-05',
-        category: 'Loyer & Utilities',
-        description: 'Loyer entrepôt janvier',
-        amount: 1200,
-        type: 'fixed',
-        recurrence: 'monthly',
-        validated: true
-    },
-    {
-        id: 'CHG-004',
-        date: '2025-01-20',
-        category: 'Marketing & Publicité',
-        description: 'Campagne Instagram Ads',
-        amount: 500,
-        type: 'variable',
-        validated: false
-    }
+const chargeCategories: { value: ChargeCategory; label: string }[] = [
+    { value: 'rent', label: 'Loyer' },
+    { value: 'utilities', label: 'Services (Eau, électricité...)' },
+    { value: 'salaries', label: 'Salaires' },
+    { value: 'marketing', label: 'Marketing' },
+    { value: 'supplies', label: 'Fournitures' },
+    { value: 'maintenance', label: 'Maintenance' },
+    { value: 'other', label: 'Autre' }
 ];
 
 export default function ChargesPage() {
-    const [charges, setCharges] = useState<Charge[]>(initialCharges);
+    const [charges, setCharges] = useState<Charge[]>([]);
+    const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('all');
     const [typeFilter, setTypeFilter] = useState('all');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [monthlyData, setMonthlyData] = useState<any[]>([]);
 
-    const filteredCharges = charges.filter(charge => {
-        const matchesSearch = charge.description.toLowerCase().includes(search.toLowerCase());
-        const matchesCategory = categoryFilter === 'all' || charge.category === categoryFilter;
-        const matchesType = typeFilter === 'all' || charge.type === typeFilter;
-        const matchesStatus = statusFilter === 'all' ||
-            (statusFilter === 'validated' && charge.validated) ||
-            (statusFilter === 'pending' && !charge.validated);
+    useEffect(() => {
+        loadData();
+    }, []);
 
-        return matchesSearch && matchesCategory && matchesType && matchesStatus;
-    });
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            const [chargesRes, financialsRes] = await Promise.all([
+                apiService.getCharges(),
+                apiService.getFinancialAnalytics('year')
+            ]);
+            setCharges(chargesRes);
+            if (financialsRes?.trend) {
+                setMonthlyData(financialsRes.trend);
+            }
+        } catch (error) {
+            console.error('Error loading charges:', error);
+            notificationService.error('Erreur', 'Erreur lors du chargement des charges');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    const totalCharges = charges.reduce((sum, charge) => sum + charge.amount, 0);
-    const validatedCharges = charges.filter(c => c.validated).reduce((sum, c) => sum + c.amount, 0);
-    const pendingCharges = charges.filter(c => !c.validated).reduce((sum, c) => sum + c.amount, 0);
-    const fixedCharges = charges.filter(c => c.type === 'fixed').reduce((sum, c) => sum + c.amount, 0);
+    const filteredCharges = useMemo(() => {
+        return charges.filter(charge => {
+            const matchesSearch = charge.description.toLowerCase().includes(search.toLowerCase());
+            const matchesCategory = categoryFilter === 'all' || charge.category === categoryFilter;
+            const matchesType = typeFilter === 'all' || charge.type === typeFilter;
+            const matchesStatus = statusFilter === 'all' ||
+                (statusFilter === 'validated' && charge.validated) ||
+                (statusFilter === 'pending' && !charge.validated);
+
+            return matchesSearch && matchesCategory && matchesType && matchesStatus;
+        });
+    }, [charges, search, categoryFilter, typeFilter, statusFilter]);
+
+    const stats = useMemo(() => {
+        const total = charges.reduce((sum, charge) => sum + charge.amount, 0);
+        const validated = charges.filter(c => c.validated).reduce((sum, c) => sum + c.amount, 0);
+        const pending = charges.filter(c => !c.validated).reduce((sum, c) => sum + c.amount, 0);
+        const fixed = charges.filter(c => c.type === 'fixed').reduce((sum, c) => sum + c.amount, 0);
+        return { total, validated, pending, fixed };
+    }, [charges]);
 
     const getCategoryColor = (category: string) => {
         const colors: Record<string, string> = {
-            'Achats Produits': 'bg-red-100 text-red-800',
-            'Carburant (Gaz)': 'bg-blue-100 text-blue-800',
-            'Loyer & Utilities': 'bg-green-100 text-green-800',
-            'Marketing & Publicité': 'bg-purple-100 text-purple-800',
-            'Salaires & Honoraires': 'bg-yellow-100 text-yellow-800',
-            'Frais Transport': 'bg-indigo-100 text-indigo-800'
+            'rent': 'bg-green-100 text-green-800',
+            'utilities': 'bg-blue-100 text-blue-800',
+            'salaries': 'bg-yellow-100 text-yellow-800',
+            'marketing': 'bg-purple-100 text-purple-800',
+            'supplies': 'bg-amber-100 text-amber-800',
+            'maintenance': 'bg-indigo-100 text-indigo-800',
+            'other': 'bg-stone-100 text-stone-800'
         };
         return colors[category] || 'bg-stone-100 text-stone-800';
     };
 
-    const handleValidateCharge = (chargeId: string) => {
-        setCharges(prev =>
-            prev.map(charge =>
-                charge.id === chargeId ? { ...charge, validated: true } : charge
-            )
-        );
-    };
-
-    const handleDeleteCharge = (chargeId: string) => {
-        if (confirm('Êtes-vous sûr de vouloir supprimer cette charge ?')) {
-            setCharges(prev => prev.filter(charge => charge.id !== chargeId));
+    const handleValidateCharge = async (chargeId: string) => {
+        try {
+            await apiService.updateCharge(chargeId, { validated: true });
+            setCharges(prev =>
+                prev.map(charge =>
+                    charge.id === chargeId ? { ...charge, validated: true } : charge
+                )
+            );
+            notificationService.success('Succès', 'Charge validée avec succès');
+        } catch (error) {
+            notificationService.error('Erreur', 'Erreur lors de la validation');
         }
     };
+
+    const handleDeleteCharge = async (chargeId: string) => {
+        if (confirm('Êtes-vous sûr de vouloir supprimer cette charge ?')) {
+            try {
+                await apiService.deleteCharge(chargeId);
+                setCharges(prev => prev.filter(charge => charge.id !== chargeId));
+                notificationService.success('Succès', 'Charge supprimée');
+            } catch (error) {
+                notificationService.error('Erreur', 'Erreur lors de la suppression');
+            }
+        }
+    };
+
+    const formatCurrency = (amount: number) => `${amount?.toLocaleString() || 0} DT`;
+
+    if (loading && charges.length === 0) {
+        return (
+            <div className="p-6 space-y-6">
+                <div className="h-10 w-64 bg-stone-200 animate-pulse rounded" />
+                <div className="grid grid-cols-4 gap-4">
+                    {[1, 2, 3, 4].map(i => <div key={i} className="h-24 bg-stone-100 animate-pulse rounded-xl" />)}
+                </div>
+                <div className="h-96 bg-stone-100 animate-pulse rounded-xl" />
+            </div>
+        );
+    }
 
     return (
         <div className="p-6 space-y-6">
@@ -162,58 +143,37 @@ export default function ChargesPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <StatCard
                     title="Charges Totales"
-                    value={`${totalCharges.toLocaleString()}€`}
+                    value={formatCurrency(stats.total)}
                     icon="💸"
                     description="Toutes charges confondues"
                 />
                 <StatCard
                     title="Charges Validées"
-                    value={`${validatedCharges.toLocaleString()}€`}
+                    value={formatCurrency(stats.validated)}
                     icon="✅"
                     description="Charges confirmées"
                     variant="success"
                 />
                 <StatCard
                     title="En Attente"
-                    value={`${pendingCharges.toLocaleString()}€`}
+                    value={formatCurrency(stats.pending)}
                     icon="⏳"
                     description="Charges à valider"
                     variant="warning"
                 />
                 <StatCard
                     title="Charges Fixes"
-                    value={`${fixedCharges.toLocaleString()}€`}
+                    value={formatCurrency(stats.fixed)}
                     icon="📊"
                     description="Dépenses récurrentes"
                     variant="info"
                 />
             </div>
 
-            {/* Smart Suggestions */}
-            <Card>
-                <div className="p-6">
-                    <h2 className="text-lg font-semibold text-stone-800 mb-4">💡 Suggestions Automatiques</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <SuggestionCard
-                            title="Charges Récurrentes"
-                            description="Loyer entrepôt à venir le 1er février"
-                            action="Créer"
-                            type="fixed"
-                        />
-                        <SuggestionCard
-                            title="Basé sur l'Historique"
-                            description="Commande fournisseur habituelle ce mois-ci"
-                            action="Pré-remplir"
-                            type="supplier"
-                        />
-                    </div>
-                </div>
-            </Card>
-
             {/* Filters */}
             <Card>
                 <div className="p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <Input
                             placeholder="Rechercher une charge..."
                             value={search}
@@ -222,7 +182,7 @@ export default function ChargesPage() {
                         <Select
                             options={[
                                 { value: 'all', label: 'Toutes catégories' },
-                                ...chargeCategories.map(cat => ({ value: cat, label: cat }))
+                                ...chargeCategories.map(cat => ({ value: cat.value, label: cat.label }))
                             ]}
                             value={categoryFilter}
                             onChange={(e) => setCategoryFilter(e.target.value)}
@@ -245,14 +205,6 @@ export default function ChargesPage() {
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
                         />
-                        <Select
-                            options={[
-                                { value: 'all', label: 'Tous fournisseurs' },
-                                ...suppliers.map(sup => ({ value: sup, label: sup }))
-                            ]}
-                            value="all"
-                            onChange={() => { }}
-                        />
                     </div>
                 </div>
             </Card>
@@ -265,7 +217,7 @@ export default function ChargesPage() {
                             Liste des Charges ({filteredCharges.length})
                         </h2>
                         <div className="text-sm text-stone-600">
-                            Dernière mise à jour: Aujourd'hui
+                            {loading ? 'Mise à jour...' : 'À jour'}
                         </div>
                     </div>
 
@@ -277,7 +229,6 @@ export default function ChargesPage() {
                                 <TableHead>Catégorie</TableHead>
                                 <TableHead>Montant</TableHead>
                                 <TableHead>Type</TableHead>
-                                <TableHead>Fournisseur</TableHead>
                                 <TableHead>Statut</TableHead>
                                 <TableHead>Actions</TableHead>
                             </TableRow>
@@ -287,9 +238,11 @@ export default function ChargesPage() {
                                 <TableRow key={charge.id}>
                                     <TableCell>
                                         <div>
-                                            <p className="font-medium text-stone-800">{charge.date}</p>
+                                            <p className="font-medium text-stone-800">
+                                                {new Date(charge.date).toLocaleDateString('fr-FR')}
+                                            </p>
                                             {charge.recurrence && (
-                                                <Badge variant="default" size="sm">
+                                                <Badge variant="default" size="sm" className="mt-1">
                                                     {charge.recurrence === 'monthly' ? 'Mensuel' :
                                                         charge.recurrence === 'weekly' ? 'Hebdo' :
                                                             charge.recurrence === 'yearly' ? 'Annuel' : 'Ponctuel'}
@@ -298,15 +251,18 @@ export default function ChargesPage() {
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <p className="font-medium text-stone-800">{charge.description}</p>
+                                        <div>
+                                            <p className="font-medium text-stone-800">{charge.description}</p>
+                                            {charge.supplier && <p className="text-xs text-stone-500">{charge.supplier}</p>}
+                                        </div>
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant="default" size="sm" className={getCategoryColor(charge.category)}>
-                                            {charge.category}
+                                            {chargeCategories.find(c => c.value === charge.category)?.label || charge.category}
                                         </Badge>
                                     </TableCell>
                                     <TableCell>
-                                        <p className="font-semibold text-stone-800">{charge.amount.toLocaleString()}€</p>
+                                        <p className="font-semibold text-stone-800">{formatCurrency(charge.amount)}</p>
                                     </TableCell>
                                     <TableCell>
                                         <Badge
@@ -315,13 +271,6 @@ export default function ChargesPage() {
                                         >
                                             {charge.type === 'fixed' ? 'Fixe' : 'Variable'}
                                         </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        {charge.supplier ? (
-                                            <p className="text-sm text-stone-600">{charge.supplier}</p>
-                                        ) : (
-                                            <span className="text-stone-400">-</span>
-                                        )}
                                     </TableCell>
                                     <TableCell>
                                         {charge.validated ? (
@@ -342,7 +291,7 @@ export default function ChargesPage() {
                                             )}
                                             <button
                                                 className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                                                onClick={() => console.log('Edit', charge.id)}
+                                                onClick={() => notificationService.info('Information', 'Fonctionnalité en cours de développement')}
                                             >
                                                 Modifier
                                             </button>
@@ -359,7 +308,7 @@ export default function ChargesPage() {
                         </TableBody>
                     </Table>
 
-                    {filteredCharges.length === 0 && (
+                    {filteredCharges.length === 0 && !loading && (
                         <div className="text-center py-12">
                             <div className="text-stone-400 text-lg">Aucune charge trouvée</div>
                             <p className="text-stone-500 mt-2">
@@ -368,17 +317,11 @@ export default function ChargesPage() {
                                     : 'Commencez par ajouter votre première charge'
                                 }
                             </p>
-                            {(search === '' && categoryFilter === 'all' && typeFilter === 'all' && statusFilter === 'all') && (
-                                <Link href="/admin/analytics/charges/new" className="inline-block mt-4">
-                                    <Button variant="primary">
-                                        + Ajouter une Charge
-                                    </Button>
-                                </Link>
-                            )}
                         </div>
                     )}
                 </div>
             </Card>
+
             <Card>
                 <div className="p-6">
                     <h2 className="text-xl font-semibold text-stone-800 mb-4">
@@ -386,7 +329,7 @@ export default function ChargesPage() {
                     </h2>
                     <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={monthlyChargesData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                            <BarChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                                 <XAxis
                                     dataKey="month"
@@ -399,19 +342,14 @@ export default function ChargesPage() {
                                     tickFormatter={(value) => `${value / 1000}k`}
                                 />
                                 <Tooltip
-                                    formatter={(value: number) => [`${value.toLocaleString()}€`, 'Montant']}
+                                    formatter={(value: number) => [formatCurrency(value), 'Montant']}
                                 />
+                                <Legend />
                                 <Bar
-                                    dataKey="charges"
+                                    dataKey="expenses"
                                     fill="#ef4444"
                                     radius={[4, 4, 0, 0]}
-                                    name="Charges Totales"
-                                />
-                                <Bar
-                                    dataKey="manual"
-                                    fill="#f97316"
-                                    radius={[4, 4, 0, 0]}
-                                    name="Charges Manuelles"
+                                    name="Charges Globales"
                                 />
                             </BarChart>
                         </ResponsiveContainer>
@@ -453,29 +391,5 @@ function StatCard({
                 <span className="text-2xl">{icon}</span>
             </div>
         </Card>
-    );
-}
-
-function SuggestionCard({
-    title,
-    description,
-    action,
-    type
-}: {
-    title: string;
-    description: string;
-    action: string;
-    type: 'fixed' | 'supplier';
-}) {
-    return (
-        <div className="bg-stone-50 border border-stone-200 rounded-lg p-4 flex items-center justify-between">
-            <div>
-                <p className="font-medium text-stone-800">{title}</p>
-                <p className="text-sm text-stone-600 mt-1">{description}</p>
-            </div>
-            <Button variant="secondary" size="sm">
-                {action}
-            </Button>
-        </div>
     );
 }

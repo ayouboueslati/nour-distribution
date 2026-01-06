@@ -21,6 +21,7 @@ const navigation = [
   { name: 'Produits', href: '/admin/products', icon: '📦' },
   { name: 'Fournisseurs', href: '/admin/suppliers', icon: '🏭' },
   { name: 'Analytics', href: '/admin/analytics', icon: '📈' },
+  { name: 'Charges', href: '/admin/analytics/charges', icon: '💸' },
   { name: 'Mon Profil', href: '/admin/profile', icon: '👤' },
 ];
 
@@ -224,7 +225,7 @@ export default function AdminLayout({
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
         {/* Fixed Notification Center - Top Right */}
-        <div className="fixed top-4 right-4 z-[999]">
+        <div className="fixed top-4 right-4 z-[999] hidden lg:block">
           <NotificationCenter />
         </div>
         {/* Enhanced Mobile header */}

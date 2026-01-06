@@ -14,7 +14,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         <p className="font-semibold text-stone-800">{`Mois: ${label}`}</p>
         {payload.map((entry: any, index: number) => (
           <p key={index} style={{ color: entry.color }} className="text-sm">
-            {`${entry.name}: ${entry.value.toLocaleString()}€`}
+            {`${entry.name}: ${entry.value.toLocaleString()} DT`}
           </p>
         ))}
       </div>
@@ -29,40 +29,40 @@ export const PerformanceChart = ({ data }: { data: any[] }) => {
     <ResponsiveContainer width="100%" height={320}>
       <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-        <XAxis 
-          dataKey="month" 
+        <XAxis
+          dataKey="month"
           tick={{ fill: '#6b7280' }}
           axisLine={{ stroke: '#e5e7eb' }}
         />
-        <YAxis 
+        <YAxis
           tick={{ fill: '#6b7280' }}
           axisLine={{ stroke: '#e5e7eb' }}
           tickFormatter={(value) => `${value / 1000}k`}
         />
         <Tooltip content={<CustomTooltip />} />
         <Legend />
-        <Line 
-          type="monotone" 
-          dataKey="revenue" 
-          stroke="#10b981" 
+        <Line
+          type="monotone"
+          dataKey="revenue"
+          stroke="#10b981"
           strokeWidth={3}
           dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
           activeDot={{ r: 6, fill: '#059669' }}
           name="Chiffre d'Affaires"
         />
-        <Line 
-          type="monotone" 
-          dataKey="expenses" 
-          stroke="#ef4444" 
+        <Line
+          type="monotone"
+          dataKey="expenses"
+          stroke="#ef4444"
           strokeWidth={3}
           dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
           activeDot={{ r: 6, fill: '#dc2626' }}
           name="Charges"
         />
-        <Line 
-          type="monotone" 
-          dataKey="profit" 
-          stroke="#3b82f6" 
+        <Line
+          type="monotone"
+          dataKey="profit"
+          stroke="#3b82f6"
           strokeWidth={3}
           dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
           activeDot={{ r: 6, fill: '#2563eb' }}
@@ -79,27 +79,27 @@ export const RevenueExpenseBarChart = ({ data }: { data: any[] }) => {
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-        <XAxis 
-          dataKey="month" 
+        <XAxis
+          dataKey="month"
           tick={{ fill: '#6b7280' }}
           axisLine={{ stroke: '#e5e7eb' }}
         />
-        <YAxis 
+        <YAxis
           tick={{ fill: '#6b7280' }}
           axisLine={{ stroke: '#e5e7eb' }}
           tickFormatter={(value) => `${value / 1000}k`}
         />
         <Tooltip content={<CustomTooltip />} />
         <Legend />
-        <Bar 
-          dataKey="revenue" 
-          fill="#10b981" 
+        <Bar
+          dataKey="revenue"
+          fill="#10b981"
           radius={[4, 4, 0, 0]}
           name="Chiffre d'Affaires"
         />
-        <Bar 
-          dataKey="expenses" 
-          fill="#ef4444" 
+        <Bar
+          dataKey="expenses"
+          fill="#ef4444"
           radius={[4, 4, 0, 0]}
           name="Charges"
         />
@@ -121,11 +121,11 @@ export const ExpensePieChart = ({ data }: { data: any[] }) => {
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
     return (
-      <text 
-        x={x} 
-        y={y} 
-        fill="white" 
-        textAnchor={x > cx ? 'start' : 'end'} 
+      <text
+        x={x}
+        y={y}
+        fill="white"
+        textAnchor={x > cx ? 'start' : 'end'}
         dominantBaseline="central"
         className="text-xs font-semibold"
       >
@@ -151,10 +151,10 @@ export const ExpensePieChart = ({ data }: { data: any[] }) => {
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
           ))}
         </Pie>
-        <Tooltip 
-          formatter={(value: number) => [`${value.toLocaleString()}€`, 'Montant']}
+        <Tooltip
+          formatter={(value: number) => [`${value.toLocaleString()} DT`, 'Montant']}
         />
-        <Legend 
+        <Legend
           layout="vertical"
           verticalAlign="middle"
           align="right"
@@ -177,31 +177,31 @@ export const ProfitMarginChart = ({ data }: { data: any[] }) => {
       <AreaChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
         <defs>
           <linearGradient id="colorMargin" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
+            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
+            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1} />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-        <XAxis 
-          dataKey="month" 
+        <XAxis
+          dataKey="month"
           tick={{ fill: '#6b7280' }}
           axisLine={{ stroke: '#e5e7eb' }}
         />
-        <YAxis 
+        <YAxis
           tick={{ fill: '#6b7280' }}
           axisLine={{ stroke: '#e5e7eb' }}
           tickFormatter={(value) => `${value}%`}
         />
-        <Tooltip 
+        <Tooltip
           formatter={(value: number) => [`${value}%`, 'Marge']}
           labelFormatter={(label) => `Mois: ${label}`}
         />
-        <Area 
-          type="monotone" 
-          dataKey="margin" 
-          stroke="#3b82f6" 
-          fillOpacity={1} 
-          fill="url(#colorMargin)" 
+        <Area
+          type="monotone"
+          dataKey="margin"
+          stroke="#3b82f6"
+          fillOpacity={1}
+          fill="url(#colorMargin)"
           name="Marge Bénéficiaire"
         />
       </AreaChart>
@@ -215,28 +215,28 @@ export const MonthlyComparisonChart = ({ data }: { data: any[] }) => {
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-        <XAxis 
-          dataKey="month" 
+        <XAxis
+          dataKey="month"
           tick={{ fill: '#6b7280' }}
           axisLine={{ stroke: '#e5e7eb' }}
         />
-        <YAxis 
+        <YAxis
           tick={{ fill: '#6b7280' }}
           axisLine={{ stroke: '#e5e7eb' }}
         />
-        <Tooltip 
-          formatter={(value: number) => [`${value.toLocaleString()}€`, 'Montant']}
+        <Tooltip
+          formatter={(value: number) => [`${value.toLocaleString()} DT`, 'Montant']}
         />
         <Legend />
-        <Bar 
-          dataKey="thisYear" 
-          fill="#10b981" 
+        <Bar
+          dataKey="thisYear"
+          fill="#10b981"
           radius={[4, 4, 0, 0]}
           name="Cette Année"
         />
-        <Bar 
-          dataKey="lastYear" 
-          fill="#6b7280" 
+        <Bar
+          dataKey="lastYear"
+          fill="#6b7280"
           radius={[4, 4, 0, 0]}
           name="Année Dernière"
         />

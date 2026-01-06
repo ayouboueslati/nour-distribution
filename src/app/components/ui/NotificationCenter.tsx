@@ -127,7 +127,7 @@ export default function NotificationCenter() {
                     ></div>
 
                     {/* Dropdown */}
-                    <div className="absolute right-0 top-full mt-3 w-[420px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl border border-stone-200 z-[999] animate-scale-in overflow-hidden">
+                    <div className="fixed lg:absolute left-4 right-4 lg:left-auto lg:right-0 top-20 lg:top-full lg:mt-3 lg:w-[420px] bg-white rounded-2xl shadow-2xl border border-stone-200 z-[999] animate-scale-in overflow-hidden">
                         {/* Header */}
                         <div className="px-5 py-4 bg-gradient-to-r from-stone-50 to-amber-50 border-b border-stone-200">
                             <div className="flex items-center justify-between">
@@ -166,7 +166,7 @@ export default function NotificationCenter() {
                         </div>
 
                         {/* Notifications List */}
-                        <div className="max-h-[500px] overflow-y-auto">
+                        <div className="max-h-[60vh] lg:max-h-[500px] overflow-y-auto">
                             {notifications.length === 0 ? (
                                 // Empty State
                                 <div className="py-12 px-6 text-center">
@@ -194,7 +194,7 @@ export default function NotificationCenter() {
                                                 {/* Content */}
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-start justify-between gap-3 mb-1">
-                                                        <h4 className={`text-sm font-semibold leading-snug ${!notification.isRead ? 'text-stone-900' : 'text-stone-700'
+                                                        <h4 className={`text-base font-semibold leading-tight ${!notification.isRead ? 'text-stone-900' : 'text-stone-700'
                                                             }`}>
                                                             {notification.title}
                                                         </h4>
@@ -204,7 +204,7 @@ export default function NotificationCenter() {
                                                         )}
                                                     </div>
 
-                                                    <p className="text-sm text-stone-600 mb-2 leading-relaxed">
+                                                    <p className="text-sm md:text-base text-stone-600 mb-2 leading-relaxed">
                                                         {notification.message}
                                                     </p>
 

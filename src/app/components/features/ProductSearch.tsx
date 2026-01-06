@@ -4,15 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Search, Package } from 'lucide-react';
 import { apiService } from '../../lib/api';
 import { Input } from '../ui/Input';
-
-interface Product {
-    id: string;
-    name: string;
-    sku: string;
-    available_quantity: number;
-    retail_price?: number;
-    main_image?: string;
-}
+import { Product } from '../../../types';
 
 interface ProductSearchProps {
     onSelect: (product: Product) => void;
@@ -53,7 +45,7 @@ export default function ProductSearch({ onSelect, excludeIds = [], placeholder =
                     limit: 10
                 });
 
-                const filteredResults = (response.items || []).filter(
+                const filteredResults = (response.products || []).filter(
                     (product: Product) => !excludeIds.includes(product.id)
                 );
 
@@ -115,8 +107,8 @@ export default function ProductSearch({ onSelect, excludeIds = [], placeholder =
                                     <p className="font-medium text-stone-900 truncate">{product.name}</p>
                                     <p className="text-sm text-stone-500">SKU: {product.sku}</p>
                                     <div className="flex items-center gap-4 mt-1">
-                                        <span className={`text-xs font-medium ${product.available_quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                            {product.available_quantity > 0 ? `${product.available_quantity} en stock` : 'Rupture de stock'}
+                                        <span className={`text-xs font-medium ${product.stock_quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                            {product.stock_quantity > 0 ? `${product.stock_quantity} en stock` : 'Rupture de stock'}
                                         </span>
                                         {product.retail_price && (
                                             <span className="text-xs text-stone-500">{product.retail_price.toFixed(2)} DT</span>

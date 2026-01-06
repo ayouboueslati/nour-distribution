@@ -5,8 +5,11 @@ import Link from 'next/link';
 import { Button, Input, Card, Badge, Select, Modal, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../../components/ui';
 import { apiService } from '../../../lib/api';
 import { Product, Category, Supplier } from '../../../../types';
+import { useAuth } from '../../../context/AuthContext';
+import { StockAnalyticsSection } from './components/StockAnalyticsSection';
 
 export default function ProductsPage() {
+  const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -51,7 +54,9 @@ export default function ProductsPage() {
         apiService.getSuppliers()
       ]);
 
-      setProducts(productsData.products || []);
+      setProducts((productsData.products || []).sort((a: any, b: any) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      ));
       setCategories(categoriesData.categories || []);
       setSuppliers(suppliersData.suppliers || []);
     } catch (err: any) {
@@ -338,6 +343,11 @@ export default function ProductsPage() {
         <StatCard title="Rupture" value={outOfStockProducts.toString()} icon="❌" variant="danger" />
       </div>
 
+      {/* Stock Analytics Section - MANAGER+ only */}
+      {user && ['manager', 'admin', 'super_admin'].includes(user.role) && (
+        <StockAnalyticsSection />
+      )}
+
       {/* Bulk Actions Bar */}
       {selectedProducts.length > 0 && (
         <Card className="bg-amber-50 border-amber-200">
@@ -497,7 +507,12 @@ export default function ProductsPage() {
                       <div className="flex items-center space-x-2">
                         <span className="font-medium">{product.stock_quantity}</span>
                         {product.stock_quantity <= product.min_stock_level && (
-                          <span className="text-xs text-amber-600">min: {product.min_stock_level}</span>
+                          <span className="text-xs text-amber-600 block">min: {product.min_stock_level}</span>
+                        )}
+                        {product.stock_forecast && (
+                          <Badge variant={product.stock_forecast < 15 ? 'danger' : product.stock_forecast < 30 ? 'warning' : 'success'} size="sm" className="mt-1">
+                            {product.stock_forecast} jours restants
+                          </Badge>
                         )}
                       </div>
                     </TableCell>

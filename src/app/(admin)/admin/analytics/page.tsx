@@ -1,118 +1,55 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Card, Button, Badge} from "../../../components/ui/index";
+import { useState, useMemo, useEffect } from 'react';
+import { Card, Button, Badge } from "../../../components/ui/index";
 import Link from 'next/link';
-import { 
-  PerformanceChart, 
-  RevenueExpenseBarChart, 
-  ExpensePieChart, 
+import {
+  PerformanceChart,
+  RevenueExpenseBarChart,
+  ExpensePieChart,
   ProfitMarginChart,
-  MonthlyComparisonChart 
+  MonthlyComparisonChart
 } from './components/charts/FinancialCharts';
-
-// Types
-interface FinancialData {
-  revenue: number;
-  expenses: number;
-  profit: number;
-  margin: number;
-}
-
-interface ChartData {
-  month: string;
-  revenue: number;
-  expenses: number;
-  profit: number;
-  margin: number;
-}
-
-interface ExpenseCategory {
-  category: string;
-  amount: number;
-  percentage: number;
-  trend: 'up' | 'down' | 'stable';
-}
+import { apiService } from '@/app/lib/api';
+import { FinancialAnalytics, ExpenseBreakdown, ComparisonData, InsightData } from '@/types/analytics';
 
 export default function AnalyticsPage() {
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
   const [chartView, setChartView] = useState<'performance' | 'revenue' | 'profit' | 'comparison'>('performance');
+  const [loading, setLoading] = useState(true);
+  const [financials, setFinancials] = useState<FinancialAnalytics | null>(null);
+  const [expenses, setExpenses] = useState<ExpenseBreakdown | null>(null);
+  const [comparisons, setComparisons] = useState<ComparisonData[] | null>(null);
+  const [insights, setInsights] = useState<InsightData | null>(null);
 
-  // Mock data - in real app, this would come from API
-  const financialData: FinancialData = {
-    revenue: 45230,
-    expenses: 28750,
-    profit: 16480,
-    margin: 36.4
+  useEffect(() => {
+    loadAnalytics();
+  }, [timeRange]);
+
+  const loadAnalytics = async () => {
+    try {
+      setLoading(true);
+      const [financialsRes, expensesRes, comparisonsRes, insightsRes] = await Promise.all([
+        apiService.getFinancialAnalytics(timeRange),
+        apiService.getExpenseBreakdown(),
+        apiService.getComparisonData(),
+        apiService.getSmartInsights()
+      ]);
+
+      setFinancials(financialsRes);
+      setExpenses(expensesRes);
+      setComparisons(comparisonsRes);
+      setInsights(insightsRes);
+    } catch (error) {
+      console.error('Error loading analytics:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Performance chart data
-  const performanceData: ChartData[] = [
-    { month: 'Jan', revenue: 42000, expenses: 26500, profit: 15500, margin: 36.9 },
-    { month: 'Fév', revenue: 38500, expenses: 24200, profit: 14300, margin: 37.1 },
-    { month: 'Mar', revenue: 45230, expenses: 28750, profit: 16480, margin: 36.4 },
-    { month: 'Avr', revenue: 41000, expenses: 25500, profit: 15500, margin: 37.8 },
-    { month: 'Mai', revenue: 47800, expenses: 30200, profit: 17600, margin: 36.8 },
-    { month: 'Juin', revenue: 44500, expenses: 27800, profit: 16700, margin: 37.5 }
-  ];
-
-  // Expense breakdown for pie chart
-  const expensePieData = [
-    { name: 'Achats Fournisseurs', value: 18500 },
-    { name: 'Frais Opérationnels', value: 4500 },
-    { name: 'Transport & Livraison', value: 3200 },
-    { name: 'Marketing', value: 1500 },
-    { name: 'Divers', value: 1050 }
-  ];
-
-  // Monthly comparison data
-  const comparisonData = [
-    { month: 'Jan', thisYear: 42000, lastYear: 38000 },
-    { month: 'Fév', thisYear: 38500, lastYear: 36500 },
-    { month: 'Mar', thisYear: 45230, lastYear: 41000 },
-    { month: 'Avr', thisYear: 41000, lastYear: 39500 },
-    { month: 'Mai', thisYear: 47800, lastYear: 42500 },
-    { month: 'Juin', thisYear: 44500, lastYear: 40800 }
-  ];
-
-  const expenseCategories: ExpenseCategory[] = [
-    { category: 'Achats Fournisseurs', amount: 18500, percentage: 64.3, trend: 'up' },
-    { category: 'Frais Opérationnels', amount: 4500, percentage: 15.7, trend: 'stable' },
-    { category: 'Transport & Livraison', amount: 3200, percentage: 11.1, trend: 'down' },
-    { category: 'Marketing', amount: 1500, percentage: 5.2, trend: 'up' },
-    { category: 'Divers', amount: 1050, percentage: 3.7, trend: 'stable' }
-  ];
-
-  // Automated data sources
-  const automatedSources = [
-    { name: 'Ventes Facturées', amount: 45230, source: 'factures', accuracy: 'high' },
-    { name: 'Achats Fournisseurs', amount: 18500, source: 'suppliers', accuracy: 'high' },
-    { name: 'Charges Manuelles', amount: 10250, source: 'manual', accuracy: 'medium' }
-  ];
-
-  // Smart insights
-  const insights = [
-    "Vos frais d'achat représentent 64% de vos dépenses totales",
-    "Marge bénéficiaire en hausse de 2% ce mois-ci",
-    "Dépenses de transport en baisse de 8% par rapport au mois dernier",
-    "Recommandation: Négocier de meilleurs prix avec vos principaux fournisseurs"
-  ];
-
-  // Filter data based on time range
-  const filteredData = useMemo(() => {
-    switch (timeRange) {
-      case 'week':
-        return performanceData.slice(-1);
-      case 'month':
-        return performanceData.slice(-3);
-      case 'quarter':
-        return performanceData.slice(-6);
-      case 'year':
-        return performanceData;
-      default:
-        return performanceData;
-    }
-  }, [timeRange]);
+  const formatCurrency = (amount: number) => {
+    return `${amount?.toLocaleString() || 0} DT`;
+  };
 
   const getTrendVariant = (trend: string) => {
     switch (trend) {
@@ -130,20 +67,47 @@ export default function AnalyticsPage() {
     }
   };
 
-  // Render the appropriate chart based on view
   const renderMainChart = () => {
+    if (loading) return <div className="h-full flex items-center justify-center">Chargement des données...</div>;
+    if (!financials) return <div className="h-full flex items-center justify-center">Données non disponibles</div>;
+
     switch (chartView) {
       case 'performance':
-        return <PerformanceChart data={filteredData} />;
+        return <PerformanceChart data={financials.trend} />;
       case 'revenue':
-        return <RevenueExpenseBarChart data={filteredData} />;
+        return <RevenueExpenseBarChart data={financials.trend} />;
       case 'profit':
-        return <ProfitMarginChart data={filteredData} />;
+        return <ProfitMarginChart data={financials.trend} />;
       case 'comparison':
-        return <MonthlyComparisonChart data={comparisonData} />;
+        return comparisons ? <MonthlyComparisonChart data={comparisons} /> : null;
       default:
-        return <PerformanceChart data={filteredData} />;
+        return <PerformanceChart data={financials.trend} />;
     }
+  };
+
+  if (loading && !financials) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <div className="h-10 w-64 bg-stone-200 animate-pulse rounded" />
+          <div className="h-10 w-48 bg-stone-200 animate-pulse rounded" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-stone-100 animate-pulse rounded-xl" />)}
+        </div>
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <div className="xl:col-span-2 h-96 bg-stone-100 animate-pulse rounded-xl" />
+          <div className="h-96 bg-stone-100 animate-pulse rounded-xl" />
+        </div>
+      </div>
+    );
+  }
+
+  const summary = financials?.summary || {
+    revenue: 0, revenue_change_percent: 0,
+    expenses: 0, expenses_change_percent: 0,
+    profit: 0, profit_change_percent: 0,
+    margin: 0, margin_change_percent: 0
   };
 
   return (
@@ -175,11 +139,10 @@ export default function AnalyticsPage() {
                 <button
                   key={range}
                   onClick={() => setTimeRange(range)}
-                  className={`px-4 py-2 rounded-lg transition-all duration-200 text-sm ${
-                    timeRange === range
-                      ? 'bg-amber-500 text-white shadow-md'
-                      : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-                  }`}
+                  className={`px-4 py-2 rounded-lg transition-all duration-200 text-sm ${timeRange === range
+                    ? 'bg-amber-500 text-white shadow-md'
+                    : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                    }`}
                 >
                   {range === 'week' && 'Cette Semaine'}
                   {range === 'month' && 'Ce Mois'}
@@ -194,15 +157,14 @@ export default function AnalyticsPage() {
                 { key: 'revenue', label: '💰 Revenus vs Charges', icon: '💰' },
                 { key: 'profit', label: '🎯 Marge', icon: '🎯' },
                 { key: 'comparison', label: '🔄 Comparaison', icon: '🔄' }
-              ] as const).map(({ key, label, icon }) => (
+              ] as const).map(({ key, label }) => (
                 <button
                   key={key}
                   onClick={() => setChartView(key)}
-                  className={`px-4 py-2 rounded-lg transition-all duration-200 text-sm ${
-                    chartView === key
-                      ? 'bg-blue-500 text-white shadow-md'
-                      : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-                  }`}
+                  className={`px-4 py-2 rounded-lg transition-all duration-200 text-sm ${chartView === key
+                    ? 'bg-blue-500 text-white shadow-md'
+                    : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                    }`}
                 >
                   {label}
                 </button>
@@ -216,35 +178,35 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <MetricCard
           title="Chiffre d'Affaires"
-          value={`${financialData.revenue.toLocaleString()}€`}
-          change="+12.5%"
-          trend="up"
+          value={formatCurrency(summary.revenue)}
+          change={`${summary.revenue_change_percent >= 0 ? '+' : ''}${summary.revenue_change_percent}%`}
+          trend={summary.revenue_change_percent >= 0 ? 'up' : 'down'}
           icon="💰"
           description="Revenus totaux ce mois"
         />
         <MetricCard
           title="Charges Totales"
-          value={`${financialData.expenses.toLocaleString()}€`}
-          change="+8.2%"
-          trend="up"
+          value={formatCurrency(summary.expenses)}
+          change={`${summary.expenses_change_percent >= 0 ? '+' : ''}${summary.expenses_change_percent}%`}
+          trend={summary.expenses_change_percent >= 0 ? 'up' : 'down'}
           icon="💸"
-          description="Dépenses totales ce mois"
+          description="Dépenses globales (fournisseurs + fixes)"
         />
         <MetricCard
           title="Bénéfice Net"
-          value={`${financialData.profit.toLocaleString()}€`}
-          change="+18.3%"
-          trend="up"
+          value={formatCurrency(summary.profit)}
+          change={`${summary.profit_change_percent >= 0 ? '+' : ''}${summary.profit_change_percent}%`}
+          trend={summary.profit_change_percent >= 0 ? 'up' : 'down'}
           icon="🎯"
-          description="Profit après charges"
+          description="Profit net après charges"
         />
         <MetricCard
           title="Marge Bénéficiaire"
-          value={`${financialData.margin}%`}
-          change="+2.1%"
-          trend="up"
+          value={`${summary.margin}%`}
+          change={`${summary.margin_change_percent >= 0 ? '+' : ''}${summary.margin_change_percent}%`}
+          trend={summary.margin_change_percent >= 0 ? 'up' : 'down'}
           icon="📈"
-          description="Ratio profit/revenus"
+          description="Ratio profit/revenus global"
         />
       </div>
 
@@ -276,7 +238,7 @@ export default function AnalyticsPage() {
                 Répartition des Charges
               </h2>
               <div className="h-80">
-                <ExpensePieChart data={expensePieData} />
+                <ExpensePieChart data={expenses?.categories.map(c => ({ name: c.category, value: c.amount })) || []} />
               </div>
             </div>
           </Card>
@@ -288,19 +250,18 @@ export default function AnalyticsPage() {
                 Sources de Données
               </h2>
               <div className="space-y-3">
-                {automatedSources.map((source) => (
+                {expenses?.sources.map((source) => (
                   <div key={source.name} className="flex items-center justify-between p-3 bg-stone-50 rounded-lg">
                     <div>
                       <p className="font-medium text-stone-800">{source.name}</p>
-                      <p className="text-sm text-stone-500">
-                        Source: {source.source === 'factures' ? 'Factures' : 
-                                source.source === 'suppliers' ? 'Fournisseurs' : 'Manuelle'}
+                      <p className="text-sm text-stone-500 capitalize">
+                        Catégorie: {source.source}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold">{source.amount.toLocaleString()}€</p>
-                      <Badge 
-                        variant={source.accuracy === 'high' ? 'success' : 'warning'} 
+                      <p className="font-semibold">{formatCurrency(source.amount)}</p>
+                      <Badge
+                        variant={source.accuracy === 'high' ? 'success' : 'warning'}
                         size="sm"
                       >
                         {source.accuracy === 'high' ? 'Précis' : 'Estimé'}
@@ -321,18 +282,17 @@ export default function AnalyticsPage() {
             Analyse Détaillée des Charges
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {expenseCategories.map((category, index) => (
+            {expenses?.categories.map((category, index) => (
               <div key={category.category} className="text-center p-4 bg-stone-50 rounded-lg">
                 <div className="flex justify-center mb-2">
-                  <div className={`w-3 h-3 rounded-full ${
-                    index === 0 ? 'bg-red-500' :
+                  <div className={`w-3 h-3 rounded-full ${index === 0 ? 'bg-red-500' :
                     index === 1 ? 'bg-blue-500' :
-                    index === 2 ? 'bg-green-500' :
-                    index === 3 ? 'bg-yellow-500' : 'bg-purple-500'
-                  }`} />
+                      index === 2 ? 'bg-green-500' :
+                        index === 3 ? 'bg-yellow-500' : 'bg-purple-500'
+                    }`} />
                 </div>
                 <p className="font-medium text-stone-800 text-sm mb-1">{category.category}</p>
-                <p className="text-lg font-semibold text-stone-800">{category.amount.toLocaleString()}€</p>
+                <p className="text-lg font-semibold text-stone-800">{formatCurrency(category.amount)}</p>
                 <p className="text-sm text-stone-500">{category.percentage}% du total</p>
                 <div className="flex items-center justify-center space-x-1 mt-2">
                   <span className="text-sm">{getTrendIcon(category.trend)}</span>
@@ -350,12 +310,12 @@ export default function AnalyticsPage() {
       <Card>
         <div className="p-6">
           <h2 className="text-xl font-semibold text-stone-800 mb-4">
-            💡 Insights & Recommandations
+            💡 Business Health & Insights
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {insights.map((insight, index) => (
+            {insights?.insights.map((insight, index) => (
               <div key={index} className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-blue-800 text-sm leading-relaxed">{insight}</p>
+                <p className="text-blue-800 text-sm leading-relaxed font-medium">{insight}</p>
               </div>
             ))}
           </div>
@@ -366,42 +326,41 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <QuickActionCard
           title="📋 Rapport Détaillé"
-          description="Générer un rapport PDF complet"
+          description="Générer un rapport financier complet"
           action="Générer"
           onClick={() => console.log('Generate report')}
-          color="bg-blue-500"
+          color="bg-stone-800"
         />
         <QuickActionCard
-          title="🔍 Analyse Avancée"
-          description="Analyses détaillées par segment"
-          action="Explorer"
-          onClick={() => console.log('Advanced analysis')}
-          color="bg-green-500"
+          title="🔍 Analyse des Charges"
+          description="Gérer les dépenses opérationnelles"
+          action="Gérer"
+          onClick={() => window.location.href = '/admin/analytics/charges'}
+          color="bg-amber-500"
         />
         <QuickActionCard
-          title="🎯 Objectifs"
-          description="Définir et suivre les objectifs"
+          title="🎯 Objectifs Annuels"
+          description="Définir et suivre les budgets"
           action="Configurer"
           onClick={() => console.log('Set goals')}
-          color="bg-purple-500"
+          color="bg-blue-600"
         />
       </div>
     </div>
   );
 }
 
-// Supporting Components (keep the same MetricCard and QuickActionCard from previous version)
-function MetricCard({ 
-  title, 
-  value, 
-  change, 
-  trend, 
-  icon, 
-  description 
-}: { 
-  title: string; 
-  value: string; 
-  change: string; 
+function MetricCard({
+  title,
+  value,
+  change,
+  trend,
+  icon,
+  description
+}: {
+  title: string;
+  value: string;
+  change: string;
   trend: 'up' | 'down' | 'stable';
   icon: string;
   description: string;
@@ -441,19 +400,20 @@ function QuickActionCard({
   color: string;
 }) {
   return (
-    <Card className="hover:shadow-md transition-all duration-200 cursor-pointer group">
-      <div 
-        className="p-4 flex items-center justify-between"
-        onClick={onClick}
-      >
-        <div>
-          <p className="font-medium text-stone-800">{title}</p>
-          <p className="text-sm text-stone-600 mt-1">{description}</p>
+    <div onClick={onClick} className="cursor-pointer group">
+      <Card className="hover:shadow-md transition-all duration-200">
+        <div
+          className="p-4 flex items-center justify-between"
+        >
+          <div>
+            <p className="font-medium text-stone-800">{title}</p>
+            <p className="text-sm text-stone-600 mt-1">{description}</p>
+          </div>
+          <div className={`${color} text-white px-3 py-1.5 rounded-lg group-hover:scale-105 transition-transform duration-200 text-sm font-medium shadow-sm`}>
+            {action}
+          </div>
         </div>
-        <div className={`${color} text-white p-2 rounded-lg group-hover:scale-110 transition-transform duration-200 text-sm font-medium`}>
-          {action}
-        </div>
-      </div>
-    </Card>
+      </Card>
+    </div>
   );
 }

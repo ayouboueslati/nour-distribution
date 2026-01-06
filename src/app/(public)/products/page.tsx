@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Filter, Grid3X3, List, X, Loader2 } from 'lucide-react';
 import ProductCard from '../../components/features/ProductCard';
-import { apiService } from '../../lib/api';
+import { apiService, getProductImageUrl } from '../../lib/api';
 import { Product, Category, ProductListResponse } from '../../../types';
 
 export default function ProductsPage() {
@@ -386,7 +386,7 @@ export default function ProductsPage() {
                                             category={product.category?.name || 'Non catégorisé'}
                                             stock={getStockStatus(product.available_quantity, product.needs_restock)}
                                             stockQuantity={product.available_quantity}
-                                            image={product.main_image || '/images/products/placeholder.jpg'}
+                                            image={getProductImageUrl(product.main_image)}
                                             description={product.short_description || product.description || ''}
                                             onViewDetails={() => handleViewDetails(product.id)}
                                             buttonType="cart"

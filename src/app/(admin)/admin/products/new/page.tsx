@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Input, Card, Textarea, Select } from '../../../../components/ui';
+import { Button, Input, Card, Textarea, Select, ImageUpload } from '../../../../components/ui';
 import { apiService } from '../../../../lib/api';
 
 interface Category {
@@ -21,6 +21,10 @@ export default function NewProductPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // File states
+  const [mainImageFile, setMainImageFile] = useState<File | null>(null);
+  const [additionalImageFiles, setAdditionalImageFiles] = useState<File[]>([]);
+
   const [formData, setFormData] = useState({
     // Basic Information
     name: '',
@@ -28,10 +32,10 @@ export default function NewProductPage() {
     short_description: '',
     sku: '',
     barcode: '',
-    
+
     // Categorization
     category_id: '',
-    
+
     // Hair-Specific Attributes
     hair_type: '',
     hair_texture: '',
@@ -39,34 +43,33 @@ export default function NewProductPage() {
     hair_color: '',
     hair_origin: '',
     hair_quality: '',
-    
+
     // Packaging
     weight_grams: '' as string | number,
     bundle_pieces: '1',
     package_dimensions: '',
-    
+
     // Inventory
     stock_quantity: '0',
     min_stock_level: '5',
     max_stock_level: '' as string | number,
-    
+
     // Pricing
     cost_price: '' as string | number,
     wholesale_price: '' as string | number,
     retail_price: '' as string | number,
-    
+
     // Supplier
     supplier_id: '',
     supplier_sku: '',
-    
+
     // Status & Visibility
     is_active: true,
     is_featured: false,
     is_best_seller: false,
     is_new_arrival: true,
-    
-    // Media & SEO
-    main_image: '',
+
+    // SEO
     meta_title: '',
     meta_description: '',
     search_keywords: ''
@@ -117,7 +120,7 @@ export default function NewProductPage() {
     }
 
     try {
-      // Prepare data for API - convert strings to proper types
+      // 1. Create Product
       const submitData: any = {
         // Basic Information
         name: formData.name.trim(),
@@ -125,10 +128,10 @@ export default function NewProductPage() {
         short_description: formData.short_description.trim() || null,
         sku: formData.sku.trim(),
         barcode: formData.barcode.trim() || null,
-        
+
         // Categorization
         category_id: formData.category_id,
-        
+
         // Hair-Specific Attributes
         hair_type: formData.hair_type.trim() || null,
         hair_texture: formData.hair_texture.trim() || null,
@@ -136,41 +139,55 @@ export default function NewProductPage() {
         hair_color: formData.hair_color.trim() || null,
         hair_origin: formData.hair_origin.trim() || null,
         hair_quality: formData.hair_quality.trim() || null,
-        
+
         // Packaging
         weight_grams: formData.weight_grams ? parseInt(formData.weight_grams as string) : null,
         bundle_pieces: parseInt(formData.bundle_pieces) || 1,
         package_dimensions: formData.package_dimensions.trim() || null,
-        
+
         // Inventory
         stock_quantity: parseInt(formData.stock_quantity) || 0,
         min_stock_level: parseInt(formData.min_stock_level) || 5,
         max_stock_level: formData.max_stock_level ? parseInt(formData.max_stock_level as string) : null,
-        
+
         // Pricing
         cost_price: formData.cost_price ? parseFloat(formData.cost_price as string) : null,
         wholesale_price: formData.wholesale_price ? parseFloat(formData.wholesale_price as string) : null,
         retail_price: formData.retail_price ? parseFloat(formData.retail_price as string) : null,
-        
+
         // Supplier
         supplier_id: formData.supplier_id,
         supplier_sku: formData.supplier_sku.trim() || null,
-        
+
         // Status & Visibility
         is_active: formData.is_active,
         is_featured: formData.is_featured,
         is_best_seller: formData.is_best_seller,
         is_new_arrival: formData.is_new_arrival,
-        
-        // Media & SEO
-        main_image: formData.main_image.trim() || null,
+
+        // SEO
         meta_title: formData.meta_title.trim() || null,
         meta_description: formData.meta_description.trim() || null,
         search_keywords: formData.search_keywords.trim() || null
       };
 
-      console.log('📤 Sending product data:', submitData);
-      await apiService.createProduct(submitData);
+      console.log('📤 Creating product:', submitData);
+      const newProduct = await apiService.createProduct(submitData);
+
+      // 2. Upload Images if any
+      if (newProduct?.id) {
+        // Upload main image
+        if (mainImageFile) {
+          console.log('📤 Uploading main image...');
+          await apiService.uploadMainImage(newProduct.id, mainImageFile);
+        }
+
+        // Upload additional images
+        if (additionalImageFiles.length > 0) {
+          console.log(`📤 Uploading ${additionalImageFiles.length} additional images...`);
+          await apiService.uploadAdditionalImages(newProduct.id, additionalImageFiles);
+        }
+      }
 
       // Redirect to products list
       router.push('/admin/products');
@@ -312,6 +329,28 @@ export default function NewProductPage() {
                     value={formData.retail_price}
                     onChange={(e) => handleChange('retail_price', e.target.value)}
                     placeholder="65.00"
+                  />
+                </div>
+              </div>
+            </Card>
+
+            <Card>
+              <div className="p-6">
+                <h2 className="text-lg font-semibold text-stone-800 mb-4">Images</h2>
+                <div className="space-y-6">
+                  <ImageUpload
+                    label="Image Principale"
+                    files={mainImageFile ? [mainImageFile] : []}
+                    onFilesChange={(files: File[]) => setMainImageFile(files[0] || null)}
+                    helpText="Cette image sera utilisée comme miniature partout."
+                  />
+
+                  <ImageUpload
+                    label="Images Supplémentaires"
+                    files={additionalImageFiles}
+                    onFilesChange={setAdditionalImageFiles}
+                    multiple
+                    helpText="Ajoutez d'autres vues du produit."
                   />
                 </div>
               </div>
@@ -518,12 +557,6 @@ export default function NewProductPage() {
                 onChange={(e) => handleChange('search_keywords', e.target.value)}
                 placeholder="cheveux, brésilien, 24 pouces, naturel"
                 helpText="Séparez les mots-clés par des virgules"
-              />
-              <Input
-                label="Image principale (URL)"
-                value={formData.main_image}
-                onChange={(e) => handleChange('main_image', e.target.value)}
-                placeholder="https://example.com/image.jpg"
               />
             </div>
           </div>

@@ -37,7 +37,9 @@ export default function FacturesPage() {
 
       const response = await apiService.getFactures(params);
       const facturesData = response.documents || response;
-      setFacturesList(facturesData);
+      setFacturesList(facturesData.sort((a: any, b: any) =>
+        new Date(b.created_at || b.issue_date).getTime() - new Date(a.created_at || a.issue_date).getTime()
+      ));
 
       // Calculate stats
       const revenue = facturesData
@@ -68,18 +70,18 @@ export default function FacturesPage() {
   const getStatusColor = (status: string) => {
     const s = status?.toLowerCase();
     if (s === 'payee' || s === 'paid') return 'bg-green-100 text-green-800';
+    if (s === 'partiel' || s === 'partially_paid' || s === 'partiellement_payee') return 'bg-blue-100 text-blue-800';
     if (s === 'en_attente' || s === 'pending') return 'bg-amber-100 text-amber-800';
     if (s === 'en_retard' || s === 'overdue') return 'bg-red-100 text-red-800';
-    if (s === 'partiellement_payee') return 'bg-blue-100 text-blue-800';
     return 'bg-stone-100 text-stone-800';
   };
 
   const getStatusLabel = (status: string) => {
     const s = status?.toLowerCase();
     if (s === 'payee' || s === 'paid') return 'Payée';
+    if (s === 'partiel' || s === 'partially_paid' || s === 'partiellement_payee') return 'Partiellement Payée';
     if (s === 'en_attente' || s === 'pending') return 'En attente';
     if (s === 'en_retard' || s === 'overdue') return 'En retard';
-    if (s === 'partiellement_payee') return 'Partiellement payée';
     if (s === 'annule' || s === 'cancelled') return 'Annulée';
     return status;
   };
@@ -227,6 +229,12 @@ export default function FacturesPage() {
                         className="text-amber-600 hover:text-amber-700 text-sm font-medium"
                       >
                         Voir
+                      </Link>
+                      <Link
+                        href={`/admin/sales/factures/${facture.id}/edit`}
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                      >
+                        Modifier
                       </Link>
                     </div>
                   </TableCell>

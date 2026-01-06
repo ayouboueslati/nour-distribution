@@ -28,10 +28,16 @@ export default function AvoirsPage() {
       setLoading(true);
       const params: any = {};
 
+      if (statusFilter !== 'all') {
+        params.status = statusFilter;
+      }
+
       const response = await apiService.getAvoirs(params);
       const avoirsData = response.documents || response;
-      setAvoirsList(avoirsData);
-      
+      setAvoirsList(avoirsData.sort((a: any, b: any) =>
+        new Date(b.created_at || b.issue_date).getTime() - new Date(a.created_at || a.issue_date).getTime()
+      ));
+
       // Calculate stats
       const totalAmount = avoirsData.reduce((sum: number, a: any) => sum + (a.total_amount || 0), 0);
 
@@ -54,7 +60,7 @@ export default function AvoirsPage() {
     }
   };
 
-  const filteredAvoirs = avoirsList.filter(avoir => 
+  const filteredAvoirs = avoirsList.filter(avoir =>
     avoir.client?.company_name?.toLowerCase().includes(search.toLowerCase()) ||
     avoir.client?.first_name?.toLowerCase().includes(search.toLowerCase()) ||
     avoir.client?.last_name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -191,7 +197,7 @@ export default function AvoirsPage() {
                   </TableCell>
                   <TableCell>
                     {avoir.reference_document ? (
-                      <Link 
+                      <Link
                         href={`/admin/sales/factures/${avoir.reference_document.id}`}
                         className="text-blue-600 hover:text-blue-700 text-sm"
                       >
@@ -213,13 +219,13 @@ export default function AvoirsPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex space-x-3">
-                      <Link 
+                      <Link
                         href={`/admin/sales/avoirs/${avoir.id}`}
                         className="text-amber-600 hover:text-amber-700 text-sm font-medium"
                       >
                         Voir
                       </Link>
-                      <button 
+                      <button
                         onClick={() => handleDownloadPDF(avoir.id)}
                         className="text-green-600 hover:text-green-700 text-sm font-medium"
                       >
@@ -236,8 +242,8 @@ export default function AvoirsPage() {
             <div className="text-center py-12">
               <div className="text-stone-400 text-lg">Aucun avoir trouvé</div>
               <p className="text-stone-500 mt-2">
-                {search || statusFilter !== 'all' 
-                  ? 'Ajustez vos filtres pour voir plus de résultats' 
+                {search || statusFilter !== 'all'
+                  ? 'Ajustez vos filtres pour voir plus de résultats'
                   : 'Les avoirs créés pour les retours apparaîtront ici'
                 }
               </p>
@@ -249,15 +255,15 @@ export default function AvoirsPage() {
   );
 }
 
-function StatCard({ 
-  title, 
-  value, 
-  icon, 
-  variant = 'default' 
-}: { 
-  title: string; 
-  value: string; 
-  icon: string; 
+function StatCard({
+  title,
+  value,
+  icon,
+  variant = 'default'
+}: {
+  title: string;
+  value: string;
+  icon: string;
   variant?: 'default' | 'success' | 'info' | 'warning';
 }) {
   const variantStyles = {

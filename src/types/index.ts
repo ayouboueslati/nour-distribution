@@ -5,6 +5,32 @@ export interface BaseEntity {
   updated_at: string | null;
 }
 
+export type OrderStatus = 'pending' | 'processing' | 'confirmed' | 'cancelled' | 'rejected' | 'en_attente' | 'en_traitement' | 'confirme' | 'annule' | 'rejecte';
+
+export type DocumentStatus = 'draft' | 'pending' | 'accepted' | 'refused' | 'cancelled' | 'invoiced' | 'paid' | 'overdue' | 'brouillon' | 'en_attente' | 'accepte' | 'refuse' | 'annule' | 'facture' | 'payee' | 'en_retard';
+
+export type PaymentMethod = 'cash' | 'check' | 'transfer' | 'card' | 'espéces' | 'virement' | 'chèque' | 'carte';
+
+export type PaymentTerms = 'immediate' | 'net30' | 'net60' | 'on_delivery';
+
+export type AvoirReason = 'return' | 'damaged' | 'error' | 'cancellation' | 'other';
+
+export interface AvoirItem {
+  product_id: string;
+  quantity: number;
+  unit_price: number;
+  discount_percent?: number;
+  tax_percent?: number;
+}
+
+export interface AvoirCreationPayload {
+  facture_id: string;
+  items: AvoirItem[];
+  reason: AvoirReason;
+  notes?: string;
+  issue_date?: string;
+}
+
 // Category types
 export interface Category extends BaseEntity {
   name: string;
@@ -87,11 +113,12 @@ export interface Product extends BaseEntity {
   meta_title: string | null;
   meta_description: string | null;
   search_keywords: string | null;
-  
+  stock_forecast?: number; // Days remaining based on sales velocity
+
   // Relationships
   category?: Category;
   supplier?: Supplier;
-  
+
   // Computed properties
   available_quantity: number;
   needs_restock: boolean;
@@ -109,7 +136,7 @@ export interface InventoryMovement extends BaseEntity {
   reason: string;
   notes: string | null;
   performed_by: string | null;
-  
+
   // Relationships
   product?: Product;
 }

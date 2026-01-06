@@ -36,7 +36,10 @@ export default function EditClientPage() {
         telephone: '',
         adresse: '',
         modePaiement: 'virement',
-        commentaire: ''
+        commentaire: '',
+        creditLimit: '',
+        currentBalance: 0,
+        isSuspended: false
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -50,8 +53,6 @@ export default function EditClientPage() {
     const fetchClient = async () => {
         try {
             setLoading(true);
-            // Mocking fetch as the API service might fail if endpoints don't exist
-            // In a real scenario, use: const client = await apiService.getClient(clientId);
             const client = await apiService.getClient(clientId).catch(() => null);
 
             if (client) {
@@ -65,7 +66,10 @@ export default function EditClientPage() {
                         telephone: client.phone || '',
                         adresse: client.address || '',
                         modePaiement: client.payment_method || 'virement',
-                        commentaire: client.notes || ''
+                        commentaire: client.notes || '',
+                        creditLimit: client.credit_limit || '',
+                        currentBalance: client.current_balance || 0,
+                        isSuspended: client.is_suspended || false
                     });
                 } else {
                     setClientType('b2c');
@@ -373,6 +377,45 @@ export default function EditClientPage() {
                                     placeholder="Informations commerciales supplémentaires..."
                                     rows={3}
                                 />
+                            </div>
+                        </div>
+                    </Card>
+
+                    {/* Financial Information Card (New) */}
+                    <Card className="mt-6">
+                        <div className="p-6">
+                            <h2 className="text-lg font-semibold text-stone-800 mb-4">
+                                Informations Financières
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-4">
+                                    <Input
+                                        label="Plafond de crédit (Dinars)"
+                                        type="number"
+                                        value={b2bData.creditLimit}
+                                        onChange={(e) => updateB2bField('creditLimit', e.target.value)}
+                                        placeholder="Ex: 5000"
+                                    />
+                                    <div className="flex items-center space-x-3 pt-4">
+                                        <input
+                                            type="checkbox"
+                                            id="isSuspended"
+                                            checked={b2bData.isSuspended}
+                                            onChange={(e) => setB2bData(prev => ({ ...prev, isSuspended: e.target.checked }))}
+                                            className="h-5 w-5 text-amber-600 rounded border-stone-300 focus:ring-amber-500"
+                                        />
+                                        <label htmlFor="isSuspended" className="text-sm font-medium text-stone-700">
+                                            Suspendre le compte (Crédit bloqué)
+                                        </label>
+                                    </div>
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="p-4 bg-stone-50 rounded-lg border border-stone-200">
+                                        <p className="text-sm text-stone-500 mb-1">Solde Actuel</p>
+                                        <p className="text-2xl font-bold text-stone-800">{b2bData.currentBalance?.toFixed(3) || '0.000'} TND</p>
+                                        <p className="text-xs text-stone-400 mt-1">Calculé automatiquement</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </Card>

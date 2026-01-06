@@ -17,6 +17,7 @@ interface InputProps {
   step?: string;
   className?: string;
   min?: string | number;
+  max?: string | number;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -26,6 +27,7 @@ export const Input: React.FC<InputProps> = ({
   placeholder,
   value,
   min,
+  max,
   onChange,
   error,
   required = false,
@@ -47,6 +49,8 @@ export const Input: React.FC<InputProps> = ({
         type={type}
         value={value}
         step={step}
+        min={min}
+        max={max}
         onChange={onChange}
         placeholder={placeholder}
         disabled={disabled}

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Button, Card, Badge } from '../../../../components/ui';
+import { Button, Card, Badge, Modal, Input, Select } from '../../../../components/ui';
 import { apiService } from '../../../../lib/api';
 import { Product } from '../../../../../types';
 
@@ -16,6 +16,14 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Stock Adjustment State
+  const [showAdjModal, setShowAdjModal] = useState(false);
+  const [adjForm, setAdjForm] = useState({
+    real_quantity: 0,
+    reason: 'manual_audit',
+    note: ''
+  });
+
   useEffect(() => {
     if (productId) {
       fetchProduct();
@@ -25,7 +33,7 @@ export default function ProductDetailPage() {
   const fetchProduct = async () => {
     try {
       setLoading(true);
-      const response = await apiService.getProduct(productId);
+      const response = await apiService.getProductAdmin(productId);
       setProduct(response);
     } catch (err: any) {
       setError(err.message || 'Erreur lors du chargement du produit');
@@ -42,6 +50,22 @@ export default function ProductDetailPage() {
       } catch (err: any) {
         setError(err.message || 'Erreur lors de la suppression');
       }
+    }
+  }
+
+  const handleStockAdjust = async () => {
+    try {
+      await apiService.adjustStock({
+        product_id: productId,
+        real_quantity: adjForm.real_quantity,
+        reason: adjForm.reason,
+        note: adjForm.note
+      });
+      setShowAdjModal(false);
+      fetchProduct(); // Refresh
+      setAdjForm({ real_quantity: 0, reason: 'manual_audit', note: '' });
+    } catch (err: any) {
+      alert(err.message || "Erreur lors de l'ajustement du stock");
     }
   };
 
@@ -175,6 +199,14 @@ export default function ProductDetailPage() {
                     <span>Stock minimum: {product.min_stock_level}</span>
                     <span>Maximum: {product.max_stock_level || 'N/A'}</span>
                   </div>
+                  <div className="mt-4 pt-4 border-t border-stone-200">
+                    <Button variant="secondary" size="sm" fullWidth onClick={() => {
+                      setAdjForm({ ...adjForm, real_quantity: product.stock_quantity });
+                      setShowAdjModal(true);
+                    }}>
+                      🛠️ Ajustement Manuel
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -245,6 +277,51 @@ export default function ProductDetailPage() {
           </Card>
         </div>
       </div>
+
+      <Modal
+        isOpen={showAdjModal}
+        onClose={() => setShowAdjModal(false)}
+        title="Ajustement de Stock Manuel"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-stone-600">
+            Ajustez la quantité réelle en stock. Cela créera un mouvement de stock de type "Ajustement".
+          </p>
+          <div>
+            <label className="text-sm font-medium text-stone-700">Quantité Réelle (Comptée)</label>
+            <Input
+              type="number"
+              value={adjForm.real_quantity}
+              onChange={e => setAdjForm({ ...adjForm, real_quantity: parseInt(e.target.value) || 0 })}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-stone-700">Raison</label>
+            <Select
+              options={[
+                { value: 'manual_audit', label: 'Inventaire Manuel' },
+                { value: 'damage', label: 'Endommagé / Perdu' },
+                { value: 'correction', label: 'Correction Erreur' },
+                { value: 'return', label: 'Retour Client (Non Restocké)' }
+              ]}
+              value={adjForm.reason}
+              onChange={e => setAdjForm({ ...adjForm, reason: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-stone-700">Note (Optionnel)</label>
+            <Input
+              placeholder="Détails supplémentaires..."
+              value={adjForm.note}
+              onChange={e => setAdjForm({ ...adjForm, note: e.target.value })}
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="secondary" onClick={() => setShowAdjModal(false)}>Annuler</Button>
+            <Button variant="primary" onClick={handleStockAdjust}>Confirmer l'Ajustement</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -273,9 +350,8 @@ function StatusField({ label, value }: { label: string; value: boolean }) {
   return (
     <div className="flex justify-between items-center">
       <span className="text-stone-600">{label}</span>
-      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-        value ? 'bg-green-100 text-green-800' : 'bg-stone-100 text-stone-800'
-      }`}>
+      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${value ? 'bg-green-100 text-green-800' : 'bg-stone-100 text-stone-800'
+        }`}>
         {value ? 'Oui' : 'Non'}
       </span>
     </div>

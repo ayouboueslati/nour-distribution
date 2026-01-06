@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Card } from '../../../components/ui/Card';
+import { Badge } from '../../../components/ui/Badge';
 import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../../components/ui/Table';
@@ -34,7 +35,10 @@ export default function OrdersPage() {
       }
 
       const response = await apiService.getOrders(params);
-      setOrders(response.orders || response);
+      const loadedOrders = response.orders || response;
+      setOrders(loadedOrders.sort((a: any, b: any) =>
+        new Date(b.submitted_at || b.created_at).getTime() - new Date(a.submitted_at || a.created_at).getTime()
+      ));
 
       // Calculate stats
       const allOrders = response.orders || response;
@@ -63,18 +67,31 @@ export default function OrdersPage() {
       case 'en_attente': return 'bg-amber-100 text-amber-800';
       case 'en_traitement': return 'bg-blue-100 text-blue-800';
       case 'confirme': return 'bg-green-100 text-green-800';
+      case 'completed': return 'bg-emerald-100 text-emerald-800';
       case 'annule': return 'bg-red-100 text-red-800';
       default: return 'bg-stone-100 text-stone-800';
     }
   };
 
   const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'en_attente': return 'En attente';
-      case 'en_traitement': return 'En traitement';
-      case 'confirme': return 'Confirmée';
-      case 'annule': return 'Annulée';
-      default: return status;
+    const s = status?.toLowerCase();
+    switch (s) {
+      case 'en_attente':
+      case 'pending':
+        return 'En attente';
+      case 'en_traitement':
+      case 'processing':
+        return 'En traitement';
+      case 'confirme':
+      case 'confirmed':
+        return 'Confirmée';
+      case 'completed':
+        return 'Terminée';
+      case 'annule':
+      case 'cancelled':
+        return 'Annulée';
+      default:
+        return status;
     }
   };
 
@@ -186,10 +203,11 @@ export default function OrdersPage() {
             <Select
               options={[
                 { value: 'all', label: 'Tous les statuts' },
-                { value: 'en_attente', label: 'En attente' },
-                { value: 'en_traitement', label: 'En traitement' },
-                { value: 'confirme', label: 'Confirmée' },
-                { value: 'annule', label: 'Annulée' }
+                { value: 'pending', label: 'En attente' },
+                { value: 'processing', label: 'En traitement' },
+                { value: 'confirmed', label: 'Confirmée' },
+                { value: 'completed', label: 'Terminée' },
+                { value: 'cancelled', label: 'Annulée' }
               ]}
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -223,7 +241,16 @@ export default function OrdersPage() {
             <TableBody>
               {filteredOrders.map((order) => (
                 <TableRow key={order.id}>
-                  <TableCell className="font-medium">{order.order_number}</TableCell>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      <span>{order.order_number}</span>
+                      {order.devis_count > 0 && (
+                        <Badge variant="info" size="sm">
+                          {order.devis_count} {order.devis_count === 1 ? 'Devis' : 'Devis'}
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>{getClientName(order.client)}</TableCell>
                   <TableCell>
                     <span className={`inline-flex px-2 py-1 text-xs rounded-full ${getTypeColor(order.client?.type)}`}>

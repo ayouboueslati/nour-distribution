@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Star, TrendingUp, Shield, Truck, Clock } from 'lucide-react';
-import { apiService } from '../lib/api';
+import { apiService, getProductImageUrl } from '../lib/api';
 import { Product } from '../../types';
 import { Badge, Button, Card } from '../components/ui';
 
@@ -122,7 +122,7 @@ export default function HomePage() {
                 <Card className="h-full hover:shadow-xl transition-all duration-300 overflow-hidden border-stone-200">
                   <div className="aspect-[4/3] bg-stone-100 relative overflow-hidden">
                     <img
-                      src={product.main_image || '/images/products/placeholder.jpg'}
+                      src={getProductImageUrl(product.main_image)}
                       alt={product.name}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />

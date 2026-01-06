@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Truck, Shield, Check, ShoppingCart, Star } from 'lucide-react';
 import Link from 'next/link';
-import { apiService } from '../../../lib/api';
+import { apiService, getProductImageUrl } from '../../../lib/api';
 import { useCart } from '../../../context/CartContext';
 import { Product } from '../../../../types';
 import { Badge } from '../../../components/ui';
@@ -124,10 +124,10 @@ export default function ProductDetailsPage() {
                 <div className="bg-white rounded-3xl shadow-sm border border-stone-200 overflow-hidden">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 lg:divide-x divide-stone-200">
                         {/* Image Gallery Section */}
-                        <div className="p-8 lg:p-12 space-y-6">
+                        <div className="p-8 lg:p-12 space-y-6 min-w-0">
                             <div className="aspect-square bg-stone-100 rounded-2xl overflow-hidden relative group">
                                 <img
-                                    src={selectedImage || product.main_image || '/images/products/placeholder.jpg'}
+                                    src={selectedImage ? getProductImageUrl(selectedImage) : getProductImageUrl(product.main_image)}
                                     alt={product.name}
                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                 />
@@ -138,8 +138,43 @@ export default function ProductDetailsPage() {
                                 )}
                             </div>
 
-                            {/* Thumbnails (Mocked if no multiple images in model yet) */}
-                            {/* In a real app, product.images array would be mapped here */}
+                            {/* Thumbnails */}
+                            {product.additional_images && product.additional_images.length > 0 && (
+                                <div className="flex gap-4 overflow-x-auto pb-4 snap-x gallery-scroll">
+                                    {/* Include main image as a thumbnail if not selected */}
+                                    <button
+                                        onClick={() => setSelectedImage(product.main_image || '')}
+                                        className={`shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${(selectedImage === product.main_image) || (!selectedImage && !product.main_image)
+                                            ? 'border-amber-500 ring-2 ring-amber-500/20'
+                                            : 'border-stone-200 hover:border-amber-300'
+                                            }`}
+                                    >
+                                        <img
+                                            src={getProductImageUrl(product.main_image)}
+                                            alt="Main view"
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </button>
+
+                                    {/* Additional images */}
+                                    {product.additional_images.map((img, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => setSelectedImage(img)}
+                                            className={`shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${selectedImage === img
+                                                ? 'border-amber-500 ring-2 ring-amber-500/20'
+                                                : 'border-stone-200 hover:border-amber-300'
+                                                }`}
+                                        >
+                                            <img
+                                                src={getProductImageUrl(img)}
+                                                alt={`View ${idx + 1}`}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {/* Product Info Section */}
