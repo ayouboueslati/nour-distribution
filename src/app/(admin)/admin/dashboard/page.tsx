@@ -336,48 +336,56 @@ export default function DashboardPage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <StatCard
-          title="Revenu du Mois"
-          value={`${(dashboardData.stats.totalRevenue ?? 0).toLocaleString()} DT`}
-          icon="💰"
-          trend={`${(dashboardData.stats.revenueVsLastMonth ?? 0) >= 0 ? '+' : ''}${dashboardData.stats.revenueVsLastMonth ?? 0}% vs mois dernier`}
-          link="/admin/sales/factures"
-        />
-        <StatCard
-          title="Total Commandes"
-          value={(dashboardData.stats.totalOrders ?? 0).toString()}
-          icon="📦"
-          trend="Cumul historique"
-          link="/admin/orders"
-        />
-        <StatCard
-          title="Clients Actifs"
-          value={(dashboardData.stats.activeClients ?? 0).toString()}
-          icon="👥"
-          trend="Clients avec commandes"
-          link="/admin/clients"
-        />
-        <StatCard
-          title="Produits Alert Stock"
-          value={(dashboardData.stats.lowStockItems ?? 0).toString()}
-          icon="⚠️"
-          trend={(dashboardData.stats.lowStockItems ?? 0) > 0 ? "Besoin réappro" : "Stock sain"}
-          link="/admin/products"
-        />
-        <StatCard
-          title="Paiements en Attente"
-          value={`${(dashboardData.stats.outstandingPayments ?? 0).toLocaleString()} DT`}
-          icon="💵"
-          trend="Total à encaisser"
-          link="/admin/sales/factures"
-        />
-        <StatCard
-          title="Factures Impayées"
-          value={(dashboardData.stats.unpaidFacturesCount ?? 0).toString()}
-          icon="🧾"
-          trend="Retards de paiement"
-          link="/admin/sales/factures"
-        />
+        {isLoading ? (
+          Array.from({ length: 6 }).map((_, i) => (
+            <SkeletonStatCard key={`skeleton-stat-${i}`} />
+          ))
+        ) : (
+          <>
+            <StatCard
+              title="Revenu du Mois"
+              value={`${(dashboardData.stats.totalRevenue ?? 0).toLocaleString()} DT`}
+              icon="💰"
+              trend={`${(dashboardData.stats.revenueVsLastMonth ?? 0) >= 0 ? '+' : ''}${dashboardData.stats.revenueVsLastMonth ?? 0}% vs mois dernier`}
+              link="/admin/sales/factures"
+            />
+            <StatCard
+              title="Total Commandes"
+              value={(dashboardData.stats.totalOrders ?? 0).toString()}
+              icon="📦"
+              trend="Cumul historique"
+              link="/admin/orders"
+            />
+            <StatCard
+              title="Clients Actifs"
+              value={(dashboardData.stats.activeClients ?? 0).toString()}
+              icon="👥"
+              trend="Clients avec commandes"
+              link="/admin/clients"
+            />
+            <StatCard
+              title="Produits Alert Stock"
+              value={(dashboardData.stats.lowStockItems ?? 0).toString()}
+              icon="⚠️"
+              trend={(dashboardData.stats.lowStockItems ?? 0) > 0 ? "Besoin réappro" : "Stock sain"}
+              link="/admin/products"
+            />
+            <StatCard
+              title="Paiements en Attente"
+              value={`${(dashboardData.stats.outstandingPayments ?? 0).toLocaleString()} DT`}
+              icon="💵"
+              trend="Total à encaisser"
+              link="/admin/sales/factures"
+            />
+            <StatCard
+              title="Factures Impayées"
+              value={(dashboardData.stats.unpaidFacturesCount ?? 0).toString()}
+              icon="🧾"
+              trend="Retards de paiement"
+              link="/admin/sales/factures"
+            />
+          </>
+        )}
       </div>
 
       {/* Charts & Quick Actions Grid */}
@@ -405,33 +413,40 @@ export default function DashboardPage() {
               ))}
             </div>
           </div>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              {renderChart()}
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-4 grid grid-cols-3 gap-4 text-center">
-            <div className="bg-green-50 p-3 rounded-lg">
-              <p className="text-sm text-stone-600">Ventes Moyennes</p>
-              <p className="font-semibold text-stone-800">
-                {chartData.length > 0
-                  ? (Math.round(chartData.reduce((sum: number, item: any) => sum + (item.sales || 0), 0) / chartData.length) ?? 0).toLocaleString()
-                  : 0} DT
-              </p>
-            </div>
-            <div className="bg-blue-50 p-3 rounded-lg">
-              <p className="text-sm text-stone-600">Commandes Total</p>
-              <p className="font-semibold text-stone-800">
-                {chartData.reduce((sum: number, item: any) => sum + (item.orders || 0), 0)}
-              </p>
-            </div>
-            <div className="bg-amber-50 p-3 rounded-lg">
-              <p className="text-sm text-stone-600">Croissance</p>
-              <p className={`font-semibold ${(dashboardData.stats.revenueVsLastMonth ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {(dashboardData.stats.revenueVsLastMonth ?? 0) >= 0 ? '+' : ''}{dashboardData.stats.revenueVsLastMonth ?? 0}%
-              </p>
-            </div>
-          </div>
+
+          {isLoading ? (
+            <SkeletonChart />
+          ) : (
+            <>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  {renderChart()}
+                </ResponsiveContainer>
+              </div>
+              <div className="mt-4 grid grid-cols-3 gap-4 text-center">
+                <div className="bg-green-50 p-3 rounded-lg">
+                  <p className="text-sm text-stone-600">Ventes Moyennes</p>
+                  <p className="font-semibold text-stone-800">
+                    {chartData.length > 0
+                      ? (Math.round(chartData.reduce((sum: number, item: any) => sum + (item.sales || 0), 0) / chartData.length) ?? 0).toLocaleString()
+                      : 0} DT
+                  </p>
+                </div>
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <p className="text-sm text-stone-600">Commandes Total</p>
+                  <p className="font-semibold text-stone-800">
+                    {chartData.reduce((sum: number, item: any) => sum + (item.orders || 0), 0)}
+                  </p>
+                </div>
+                <div className="bg-amber-50 p-3 rounded-lg">
+                  <p className="text-sm text-stone-600">Croissance</p>
+                  <p className={`font-semibold ${(dashboardData.stats.revenueVsLastMonth ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {(dashboardData.stats.revenueVsLastMonth ?? 0) >= 0 ? '+' : ''}{dashboardData.stats.revenueVsLastMonth ?? 0}%
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Quick Actions */}
@@ -491,20 +506,28 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="space-y-3">
-            {dashboardData.recentOrders.map((order: any) => (
-              <div key={order.id} className="flex justify-between items-center p-3 border border-stone-100 rounded-xl hover:bg-stone-50 transition-all duration-200">
-                <div>
-                  <p className="font-semibold text-stone-800 text-sm">{order.id}</p>
-                  <p className="text-stone-500 text-xs">{order.customer}</p>
+            {isLoading ? (
+              <SkeletonList items={5} />
+            ) : dashboardData.recentOrders && dashboardData.recentOrders.length > 0 ? (
+              dashboardData.recentOrders.map((order: any, index: number) => (
+                <div key={order.id || `order-${index}`} className="flex justify-between items-center p-3 border border-stone-100 rounded-xl hover:bg-stone-50 transition-all duration-200">
+                  <div>
+                    <p className="font-semibold text-stone-800 text-sm">{order.id}</p>
+                    <p className="text-stone-500 text-xs">{order.customer}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-stone-800 text-sm">{order.amount}</p>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${order.status === 'En attente' ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'}`}>
+                      {order.status}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-semibold text-stone-800 text-sm">{order.amount}</p>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full ${order.status === 'En attente' ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'}`}>
-                    {order.status}
-                  </span>
-                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-stone-400 text-sm italic">
+                Aucune commande récente
               </div>
-            ))}
+            )}
           </div>
         </Card>
 
@@ -517,9 +540,11 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="space-y-3">
-            {dashboardData.salesAnalytics?.top_products && dashboardData.salesAnalytics.top_products.length > 0 ? (
-              dashboardData.salesAnalytics.top_products.slice(0, 5).map((product: any) => (
-                <div key={product.id} className="flex justify-between items-center p-3 border border-stone-100 rounded-xl hover:bg-stone-50 transition-all duration-200">
+            {isLoading ? (
+              <SkeletonList items={5} />
+            ) : dashboardData.salesAnalytics?.top_products && dashboardData.salesAnalytics.top_products.length > 0 ? (
+              dashboardData.salesAnalytics.top_products.slice(0, 5).map((product: any, index: number) => (
+                <div key={product.id || `product-${index}`} className="flex justify-between items-center p-3 border border-stone-100 rounded-xl hover:bg-stone-50 transition-all duration-200">
                   <div className="flex-1 min-w-0 pr-2">
                     <p className="font-semibold text-stone-800 text-sm truncate">{product.name}</p>
                     <p className="text-stone-500 text-xs">{product.quantity ?? 0} vendus</p>
@@ -546,9 +571,11 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="space-y-3">
-            {dashboardData.lowStockProducts && dashboardData.lowStockProducts.length > 0 ? (
-              dashboardData.lowStockProducts.slice(0, 5).map((product: any) => (
-                <div key={product.id} className="flex justify-between items-center p-3 border border-stone-100 rounded-xl hover:bg-stone-50 transition-all duration-200">
+            {isLoading ? (
+              <SkeletonList items={5} />
+            ) : dashboardData.lowStockProducts && dashboardData.lowStockProducts.length > 0 ? (
+              dashboardData.lowStockProducts.slice(0, 5).map((product: any, index: number) => (
+                <div key={product.id || `lowstock-${index}`} className="flex justify-between items-center p-3 border border-stone-100 rounded-xl hover:bg-stone-50 transition-all duration-200">
                   <div>
                     <p className="font-semibold text-stone-800 text-sm">{product.name}</p>
                     <p className="text-stone-500 text-xs">Stock: {product.stock} unités</p>

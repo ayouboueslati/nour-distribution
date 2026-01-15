@@ -52,14 +52,6 @@ export default function AvoirsPage() {
     }
   };
 
-  const handleDownloadPDF = async (avoirId: string) => {
-    try {
-      window.open(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/documents/avoirs/${avoirId}/pdf`, '_blank');
-    } catch (error) {
-      console.error('Error downloading PDF:', error);
-    }
-  };
-
   const filteredAvoirs = avoirsList.filter(avoir =>
     avoir.client?.company_name?.toLowerCase().includes(search.toLowerCase()) ||
     avoir.client?.first_name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -225,12 +217,6 @@ export default function AvoirsPage() {
                       >
                         Voir
                       </Link>
-                      <button
-                        onClick={() => handleDownloadPDF(avoir.id)}
-                        className="text-green-600 hover:text-green-700 text-sm font-medium"
-                      >
-                        PDF
-                      </button>
                     </div>
                   </TableCell>
                 </TableRow>

@@ -1,5 +1,6 @@
-const API_BASE_URL = 'http://localhost:8000/api/v1';
-export const STATIC_BASE_URL = 'http://localhost:8000/static/';
+// API Configuration from environment variables
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+export const STATIC_BASE_URL = process.env.NEXT_PUBLIC_STATIC_URL || 'http://localhost:8000/static/';
 
 export function getProductImageUrl(imagePath?: string | null): string {
   if (!imagePath) return '/images/products/placeholder.jpg';

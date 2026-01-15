@@ -12,6 +12,7 @@ import { apiService } from '@/app/lib/api';
 import { notificationService } from '@/app/lib/notifications';
 
 interface FactureItem {
+    id?: string;
     product_id?: string;
     reference: string;
     description: string;
@@ -51,8 +52,10 @@ export default function FactureForm({ initialData, isEdit = false }: FactureForm
 
     const [items, setItems] = useState<FactureItem[]>(
         initialData?.items?.map((item: any) => ({
-            reference: item.reference || '',
-            description: item.description || item.product_name || '',
+            id: item.id,
+            product_id: item.product_id,
+            reference: item.reference || item.product?.sku || '',
+            description: item.description || item.product_name || item.product?.name || '',
             quantity: item.quantity || 1,
             unit_price: item.unit_price || 0,
             tax_percent: item.tax_percent || 19,
@@ -148,6 +151,7 @@ export default function FactureForm({ initialData, isEdit = false }: FactureForm
                 type: 'facture',
                 client_id: formData.client_id || undefined, // Ensure valid UUID or undefined
                 items: validItems.map(item => ({
+                    id: isEdit ? item.id : undefined,
                     product_id: item.product_id,
                     quantity: Number(item.quantity),
                     unit_price: Number(item.unit_price),

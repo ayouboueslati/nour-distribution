@@ -1,36 +1,96 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Nour Distribution - Frontend Application
 
-## Getting Started
+A robust, modern web interface for the Nour Distribution management platform, built with Next.js 16, React 19, and Tailwind CSS. This application serves two primary roles: a public product storefront and a comprehensive administration dashboard for sales, orders, and inventory management.
 
-First, run the development server:
+## Key Features
+
+- **Public Storefront**: Browse products and view detailed information.
+- **Admin Dashboard**: Secure administrative interface for business operations.
+- **Sales Management**: Complete lifecycle handling for:
+  - Quotes (Devis)
+  - Invoices (Factures)
+  - Credit Notes (Avoirs)
+- **Order Processing**: Workflow for managing customer orders from placement to fulfillment.
+- **Product Management**: Tools for inventory tracking and catalog updates.
+- **Responsive Design**: Fully responsive UI built with Tailwind CSS v4.
+
+## Technology Stack
+
+- **Framework**: [Next.js 16](https://nextjs.org/) (App Router)
+- **UI Library**: [React 19](https://react.dev/)
+- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+
+## Prerequisites
+
+Ensure you have the following installed on your local machine:
+
+- **Node.js**: v18.17.0 or higher
+- **npm**: v9.0.0 or higher (or equivalent package manager like yarn/pnpm/bun)
+- **Backend Service**: Ensure the API backend is running (default: `http://localhost:8000`)
+
+## Installation
+
+1.  **Clone the repository:**
+    ```bash
+    git clone <repository-url>
+    cd nour-distribution/frontend
+    ```
+
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
+
+3.  **Configure Environment:**
+    Copy the example environment file to create your local configuration.
+    ```bash
+    cp .env.example .env.local
+    ```
+    
+    Open `.env.local` and configure the API URLs if necessary:
+    ```env
+    NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+    NEXT_PUBLIC_STATIC_URL=http://localhost:8000/static/
+    NEXT_PUBLIC_ENVIRONMENT=development
+    ```
+
+## Running the Application
+
+### Development Mode
+To start the development server with hot-reload:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+Access the application at [http://localhost:3000](http://localhost:3000).
+
+### Production Build
+To create an optimized production build:
+
+```bash
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+To start the production server:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm start
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Linting
+To check code quality and fix linting issues:
 
-## Learn More
+```bash
+npm run lint
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Project Structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `src/app/(public)`: Public-facing routes (Storefront).
+- `src/app/(admin)`: Protected administrative routes.
+- `src/components`: Reusable UI components.
+- `src/lib`: Utility functions and checking logic.
+- `src/hooks`: Custom React hooks.
+- `src/context`: React Context providers.
