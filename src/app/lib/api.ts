@@ -1439,9 +1439,7 @@ class ApiService {
     return this.request(`/public/track/${orderNumber}`);
   }
 
-  async getAvoirById(avoirId: string) {
-    return this.request(`/documents/avoirs/${avoirId}`);
-  }
+  // Removed duplicate getAvoirById
 
   // ============ PDF DOWNLOAD ============
   async downloadPdf(p0: string, type: 'facture' | 'devis' | 'avoir') {
