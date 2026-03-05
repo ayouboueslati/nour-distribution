@@ -8,6 +8,14 @@ import { apiService, getProductImageUrl } from '../../lib/api';
 import { Product, Category, ProductListResponse } from '../../../types';
 
 export default function ProductsPage() {
+    return (
+        <React.Suspense fallback={<div className="min-h-screen bg-stone-50 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-amber-600" /></div>}>
+            <ProductsPageContent />
+        </React.Suspense>
+    );
+}
+
+function ProductsPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
 
