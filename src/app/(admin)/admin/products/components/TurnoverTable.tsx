@@ -49,7 +49,6 @@ export const TurnoverTable = ({ data, loading }: TurnoverTableProps) => {
                         <TableHead>Rotation</TableHead>
                         <TableHead>Vitesse</TableHead>
                         <TableHead>Rupture Estimée</TableHead>
-                        <TableHead></TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>

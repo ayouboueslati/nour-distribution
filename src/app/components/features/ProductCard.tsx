@@ -155,8 +155,8 @@ const ProductCard = ({
                 setIsLiked(!isLiked);
               }}
               className={`p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 transform focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 ${isLiked
-                  ? 'bg-red-500 text-white focus:ring-red-500'
-                  : 'bg-white text-stone-800 hover:bg-stone-100'
+                ? 'bg-red-500 text-white focus:ring-red-500'
+                : 'bg-white text-stone-800 hover:bg-stone-100'
                 }`}
               aria-label={isLiked ? `Retirer ${name} des favoris` : `Ajouter ${name} aux favoris`}
             >
@@ -169,14 +169,14 @@ const ProductCard = ({
         <div className="absolute top-4 right-4">
           <div className="relative">
             <span className={`glass px-4 py-2 rounded-full text-xs font-bold shadow-lg border inline-flex items-center gap-1.5 ${stock === "En stock"
-                ? "text-green-800 border-green-200 bg-green-50/80"
-                : stock === "Stock limité"
-                  ? "text-amber-800 border-amber-200 bg-amber-50/80"
-                  : "text-red-800 border-red-200 bg-red-50/80"
+              ? "text-green-800 border-green-200 bg-green-50/80"
+              : stock === "Stock limité"
+                ? "text-amber-800 border-amber-200 bg-amber-50/80"
+                : "text-red-800 border-red-200 bg-red-50/80"
               }`}>
               <span className={`w-2 h-2 rounded-full animate-pulse ${stock === "En stock" ? "bg-green-500" :
-                  stock === "Stock limité" ? "bg-amber-500" :
-                    "bg-red-500"
+                stock === "Stock limité" ? "bg-amber-500" :
+                  "bg-red-500"
                 }`}></span>
               {stock}
               {stockQuantity !== undefined && stockQuantity !== null && (
