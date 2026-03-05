@@ -4,8 +4,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
 
-  // REQUIRED: Enable standalone output for Docker deployment
-  output: 'standalone',
+  // Removed standalone output for Vercel compatibility
 
   // Image configuration
   images: {
