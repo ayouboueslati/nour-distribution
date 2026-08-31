@@ -321,10 +321,10 @@ export default function DashboardPage() {
     // <ProtectedRoute requiredRole={['super_admin', 'admin', 'manager', 'staff']}>
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-light text-stone-800">Tableau de Bord</h1>
         <select
-          className="border border-stone-300 rounded-xl px-4 py-2"
+          className="border border-stone-300 rounded-xl px-4 py-2 bg-white text-stone-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
           value={timeRange}
           onChange={(e) => setTimeRange(e.target.value as any)}
         >
@@ -348,6 +348,7 @@ export default function DashboardPage() {
               icon="💰"
               trend={`${(dashboardData.stats.revenueVsLastMonth ?? 0) >= 0 ? '+' : ''}${dashboardData.stats.revenueVsLastMonth ?? 0}% vs mois dernier`}
               link="/admin/sales/factures"
+              delayClass="delay-75"
             />
             <StatCard
               title="Total Commandes"
@@ -355,6 +356,7 @@ export default function DashboardPage() {
               icon="📦"
               trend="Cumul historique"
               link="/admin/orders"
+              delayClass="delay-100"
             />
             <StatCard
               title="Clients Actifs"
@@ -362,6 +364,7 @@ export default function DashboardPage() {
               icon="👥"
               trend="Clients avec commandes"
               link="/admin/clients"
+              delayClass="delay-150"
             />
             <StatCard
               title="Produits Alert Stock"
@@ -369,6 +372,7 @@ export default function DashboardPage() {
               icon="⚠️"
               trend={(dashboardData.stats.lowStockItems ?? 0) > 0 ? "Besoin réappro" : "Stock sain"}
               link="/admin/products"
+              delayClass="delay-200"
             />
             <StatCard
               title="Paiements en Attente"
@@ -376,6 +380,7 @@ export default function DashboardPage() {
               icon="💵"
               trend="Total à encaisser"
               link="/admin/sales/factures"
+              delayClass="delay-300"
             />
             <StatCard
               title="Factures Impayées"
@@ -383,6 +388,7 @@ export default function DashboardPage() {
               icon="🧾"
               trend="Retards de paiement"
               link="/admin/sales/factures"
+              delayClass="delay-500"
             />
           </>
         )}
@@ -391,7 +397,7 @@ export default function DashboardPage() {
       {/* Charts & Quick Actions Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Sales Chart */}
-        <div className="lg:col-span-2 bg-white rounded-2xl shadow-md p-6">
+        <div className="lg:col-span-2 bg-white rounded-3xl card-border-gradient shadow-luxury p-6 md:p-8 animate-fade-in-up delay-200">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-stone-800">
               Performance des Ventes {timeRange === 'week' ? 'Hebdomadaire' : timeRange === 'month' ? 'Mensuelle' : 'Annuelle'}
@@ -450,7 +456,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="bg-white rounded-2xl shadow-md p-6">
+        <div className="bg-white rounded-3xl card-border-gradient shadow-luxury p-6 md:p-8 animate-fade-in-up delay-300">
           <h2 className="text-xl font-semibold text-stone-800 mb-4">Actions Rapides</h2>
           <div className="space-y-3">
             <Link href="/admin/orders" className="block w-full bg-amber-500 text-white text-center py-3 rounded-xl hover:bg-amber-600 transition-all duration-200">
@@ -498,7 +504,7 @@ export default function DashboardPage() {
       {/* Bottom Insights Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Orders */}
-        <Card>
+        <Card className="rounded-3xl card-border-gradient shadow-luxury p-6 md:p-8 animate-fade-in-up delay-300">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-stone-800">Commandes Récentes</h2>
             <Link href="/admin/orders" className="text-amber-600 hover:text-amber-700">
@@ -532,7 +538,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* Top Products */}
-        <Card>
+        <Card className="rounded-3xl card-border-gradient shadow-luxury p-6 md:p-8 animate-fade-in-up delay-500">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-stone-800">Top Produits</h2>
             <Link href="/admin/products" className="text-amber-600 hover:text-amber-700">
@@ -563,7 +569,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* Low Stock / Slow Moving Alert */}
-        <Card>
+        <Card className="rounded-3xl card-border-gradient shadow-luxury p-6 md:p-8 animate-fade-in-up delay-[600ms]">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-stone-800">Alertes Stock</h2>
             <Link href="/admin/products" className="text-amber-600 hover:text-amber-700">
@@ -603,25 +609,30 @@ function StatCard({
   value,
   icon,
   trend,
-  link
+  link,
+  delayClass = ""
 }: {
   title: string;
   value: string;
   icon: string;
   trend: string;
   link: string;
+  delayClass?: string;
 }) {
   return (
     <Link href={link}>
-      <Card className="hover:shadow-lg transition-all duration-200 transform hover:scale-105 cursor-pointer">
-        <div className="flex justify-between items-start">
-          <div>
-            <p className="text-stone-600 text-sm">{title}</p>
-            <p className="text-2xl font-semibold text-stone-800 mt-2">{value}</p>
+      <Card className={`relative overflow-hidden card-border-gradient shadow-luxury hover-lift p-6 sm:p-8 cursor-pointer animate-fade-in-up rounded-3xl ${delayClass}`}>
+        <div className="absolute inset-0 glow-corner pointer-events-none"></div>
+        <div className="relative z-10 flex justify-between items-start">
+          <div className="flex flex-col">
+            <p className="text-3xl font-bold text-gradient mb-2">{value}</p>
+            <p className="text-stone-500 font-medium text-sm">{title}</p>
           </div>
-          <span className="text-2xl">{icon}</span>
+          <div className="w-12 h-12 rounded-xl gradient-badge flex items-center justify-center text-xl flex-shrink-0">
+            {icon}
+          </div>
         </div>
-        <p className={`text-sm mt-3 ${trend.includes('+') ? 'text-green-600' : trend === 'Urgent' ? 'text-red-600' : 'text-stone-600'
+        <p className={`relative z-10 text-xs mt-6 font-medium ${trend.includes('+') ? 'text-green-600' : trend === 'Urgent' ? 'text-red-600' : 'text-stone-400'
           }`}>
           {trend}
         </p>

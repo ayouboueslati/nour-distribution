@@ -400,3 +400,103 @@ select {
   opacity: 1;
   transform: translateY(0);
 }
+
+/* ============================================ */
+/* LUXURY SAAS UI UTILITIES */
+/* ============================================ */
+
+/* Ambient Radial Glow for Hero */
+.glow-ambient {
+  background: radial-gradient(circle at top right, rgba(217, 119, 6, 0.15) 0%, rgba(234, 88, 12, 0.05) 40%, transparent 70%);
+}
+
+/* Corner Glow for Cards */
+.glow-corner {
+  background: radial-gradient(circle at bottom right, rgba(217, 119, 6, 0.08) 0%, transparent 60%);
+}
+
+/* Subtle Dot Grid Background */
+.bg-dot-grid {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Gradient Badge for Icons */
+.gradient-badge {
+  background: linear-gradient(135deg, #d97706 0%, #ea580c 100%);
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+/* Layered Shadows for Cards */
+.shadow-luxury {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 
+              0 10px 15px -3px rgba(0, 0, 0, 0.03), 
+              0 20px 25px -5px rgba(0, 0, 0, 0.02);
+}
+
+/* Fallback gradient border that gracefully degrades */
+.card-border-gradient {
+  position: relative;
+  border: 1px solid #e7e5e4; /* border-stone-200 fallback */
+  background-clip: padding-box;
+}
+
+@supports (mask-composite: exclude) or (-webkit-mask-composite: xor) {
+  .card-border-gradient {
+    border: none;
+    background-clip: border-box;
+  }
+  .card-border-gradient::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(217, 119, 6, 0.6) 0%, rgba(234, 88, 12, 0.6) 30%, transparent 70%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+  .card-border-gradient:hover::before,
+  .card-border-gradient.featured::before {
+    opacity: 1;
+  }
+  .card-border-gradient.featured::before {
+    opacity: 0.5;
+  }
+  .card-border-gradient.featured:hover::before {
+    opacity: 1;
+  }
+}
+
+/* Gradient Border for Hero CTA button */
+.btn-gradient-border {
+  position: relative;
+  transition: box-shadow 0.3s ease;
+}
+.btn-gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: conic-gradient(from 0deg, #d97706, #ea580c, #d97706);
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.btn-gradient-border:hover::before {
+  opacity: 1;
+  animation: spin 3s linear infinite;
+}
+.btn-gradient-border:hover {
+  box-shadow: 0 0 15px rgba(217, 119, 6, 0.4);
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

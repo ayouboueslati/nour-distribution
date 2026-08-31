@@ -1,4 +1,4 @@
-import type { NextConfig } from "next";
+﻿import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
   // Image configuration
   images: {
     remotePatterns: [
+      // Local development — backend on localhost
       {
         protocol: 'http',
         hostname: 'localhost',
@@ -19,6 +20,12 @@ const nextConfig: NextConfig = {
         protocol: 'http',
         hostname: '127.0.0.1',
         port: '8000',
+        pathname: '/static/**',
+      },
+      // Production — Render-hosted backend (*.onrender.com covers any service name)
+      {
+        protocol: 'https',
+        hostname: '*.onrender.com',
         pathname: '/static/**',
       },
     ],

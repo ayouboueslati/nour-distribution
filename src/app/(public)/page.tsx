@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Star, TrendingUp, Shield, Truck, Clock } from 'lucide-react';
+import Image from 'next/image';
+import { ArrowRight, Star, TrendingUp, Shield, Truck, Clock, Sparkles } from 'lucide-react';
 import { apiService, getProductImageUrl } from '../lib/api';
 import { Product } from '../../types';
 import { Badge, Button, Card } from '../components/ui';
@@ -36,107 +37,145 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-stone-50">
       {/* Hero Section */}
-      <section className="relative h-[80vh] flex items-center justify-center overflow-hidden bg-stone-900 text-white">
-        <div className="absolute inset-0 bg-[url('/images/hero-bg.jpg')] bg-cover bg-center opacity-40"></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-stone-900/90"></div>
+      <section className="relative min-h-[85vh] sm:min-h-[90vh] overflow-hidden">
+        {/* Full-bleed background image */}
+        <div className="absolute inset-0">
+          <Image
+            src="/images/hro.jpg"
+            alt="Cheveux de tresse africaine - Nour Distribution"
+            fill
+            className="object-cover"
+            priority
+            sizes="100vw"
+          />
+          {/* Gradient overlays for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-r from-stone-950/70 via-stone-900/40 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-stone-950/50 via-transparent to-stone-900/20"></div>
+        </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8">
-          <Badge variant="warning" className="bg-amber-500/20 text-amber-300 border-amber-500/30 backdrop-blur-md px-4 py-2">
-            Nouvelle Collection 2024
-          </Badge>
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-white mb-6">
-            L'Excellence Capillaire <br />
-            <span className="text-amber-500">Pour Professionnels</span>
-          </h1>
-          <p className="text-xl md:text-2xl text-stone-300 max-w-3xl mx-auto font-light leading-relaxed">
-            Distributeur exclusif d'extensions et perruques de haute qualité.
-            Fournisseur de confiance pour les salons de coiffure et professionnels de la beauté.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-            <Link href="/products">
-              <Button size="lg" className="bg-amber-600 hover:bg-amber-700 text-white border-none rounded-full px-8 py-6 text-lg shadow-lg hover:shadow-amber-500/20 transition-all">
-                Découvrir le Catalogue
-              </Button>
-            </Link>
-            <Link href="/register">
-              <Button size="lg" variant="secondary" className="bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-md rounded-full px-8 py-6 text-lg">
-                Devenir Partenaire
-              </Button>
-            </Link>
+        {/* Floating badge — top right */}
+        <div className="absolute top-6 right-6 sm:top-10 sm:right-10 z-20 bg-gradient-to-br from-amber-500/90 to-orange-600/90 backdrop-blur-sm text-white px-5 py-3 rounded-2xl shadow-2xl transform rotate-3 hover:rotate-0 transition-all duration-300 hover:scale-105">
+          <div className="text-xs font-semibold uppercase tracking-wide opacity-90">Nouveau</div>
+          <div className="text-lg sm:text-xl font-bold">Collection 2025</div>
+        </div>
+
+        {/* Soft gradient fade into the section below */}
+        <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-stone-50 to-transparent pointer-events-none z-10"></div>
+
+        {/* Content overlay — minimal text, bottom-left anchored */}
+        <div className="relative z-10 h-full min-h-[85vh] sm:min-h-[90vh] flex items-end">
+          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pb-20 sm:pb-28 lg:pb-32">
+            <div className="max-w-xl">
+              <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md text-white px-4 py-2 rounded-full text-xs sm:text-sm font-semibold mb-5 border border-white/20 shadow-lg">
+                <Sparkles className="w-4 h-4 animate-pulse" />
+                Distribution Professionnelle
+              </div>
+
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-4 leading-[1.1] tracking-tight">
+                Cheveux de Tresse
+                <br />
+                <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 bg-clip-text text-transparent">
+                  Africaine
+                </span>
+              </h1>
+
+              <p className="text-base sm:text-lg text-white/80 mb-8 font-medium leading-relaxed">
+                Qualité premium B2B & B2C — service d&apos;excellence.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <Link href="/products">
+                  <Button size="lg" className="group bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-xl px-10 py-6 text-lg font-medium shadow-xl hover:shadow-amber-500/30 hover:from-amber-500 hover:to-orange-500 transition-all hover:scale-105">
+                    Voir le Catalogue
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
+                  </Button>
+                </Link>
+                <Link href="/register">
+                  <Button size="lg" variant="ghost" className="bg-white/10 backdrop-blur-md text-white border border-white/30 hover:bg-white/20 hover:border-white/50 rounded-xl px-10 py-6 text-lg font-medium transition-all hover:scale-105">
+                    Devenir Partenaire
+                  </Button>
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
+
       {/* Trust Indicators */}
-      <section className="py-12 bg-white border-b border-stone-100">
+      <section className="py-24 bg-stone-50 border-b border-stone-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-            <div className="flex flex-col items-center gap-4 p-6 rounded-2xl bg-stone-50 hover:bg-stone-100 transition-colors duration-300">
-              <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center">
-                <Shield className="w-6 h-6" />
+            <div className="relative flex flex-col items-center gap-6 p-8 md:p-10 rounded-3xl bg-white card-border-gradient shadow-luxury hover-lift transition-all duration-400 animate-fade-in-up delay-200">
+              <div className="absolute inset-0 glow-corner pointer-events-none rounded-3xl"></div>
+              <div className="w-16 h-16 rounded-2xl gradient-badge flex items-center justify-center relative z-10">
+                <Shield className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-lg font-semibold text-stone-900">Qualité Garantie</h3>
-              <p className="text-stone-600">Produits certifiés 100% naturels et testés rigoureusement.</p>
+              <h3 className="text-xl font-semibold text-stone-900 relative z-10">Qualité Garantie</h3>
+              <p className="text-stone-500 leading-relaxed relative z-10">Produits certifiés 100% naturels et testés rigoureusement.</p>
             </div>
-            <div className="flex flex-col items-center gap-4 p-6 rounded-2xl bg-stone-50 hover:bg-stone-100 transition-colors duration-300">
-              <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center">
-                <Truck className="w-6 h-6" />
+            <div className="relative flex flex-col items-center gap-6 p-8 md:p-10 rounded-3xl bg-white card-border-gradient shadow-luxury hover-lift transition-all duration-400 animate-fade-in-up delay-300">
+              <div className="absolute inset-0 glow-corner pointer-events-none rounded-3xl"></div>
+              <div className="w-16 h-16 rounded-2xl gradient-badge flex items-center justify-center relative z-10">
+                <Truck className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-lg font-semibold text-stone-900">Livraison Express</h3>
-              <p className="text-stone-600">Expédition sous 24/48h partout en France et en Europe.</p>
+              <h3 className="text-xl font-semibold text-stone-900 relative z-10">Livraison Express</h3>
+              <p className="text-stone-500 leading-relaxed relative z-10">Expédition sous 24/48h partout en France et en Europe.</p>
             </div>
-            <div className="flex flex-col items-center gap-4 p-6 rounded-2xl bg-stone-50 hover:bg-stone-100 transition-colors duration-300">
-              <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center">
-                <Clock className="w-6 h-6" />
+            <div className="relative flex flex-col items-center gap-6 p-8 md:p-10 rounded-3xl bg-white card-border-gradient shadow-luxury hover-lift transition-all duration-400 animate-fade-in-up delay-[400ms]">
+              <div className="absolute inset-0 glow-corner pointer-events-none rounded-3xl"></div>
+              <div className="w-16 h-16 rounded-2xl gradient-badge flex items-center justify-center relative z-10">
+                <Clock className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-lg font-semibold text-stone-900">Service Pro 24/7</h3>
-              <p className="text-stone-600">Une équipe dédiée pour accompagner les professionnels.</p>
+              <h3 className="text-xl font-semibold text-stone-900 relative z-10">Service Pro 24/7</h3>
+              <p className="text-stone-500 leading-relaxed relative z-10">Une équipe dédiée pour accompagner les professionnels.</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Featured Products */}
-      <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-12">
+      <section className="py-24 bg-stone-50 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col sm:flex-row items-center justify-between mb-16 gap-6 text-center sm:text-left">
           <div>
-            <h2 className="text-3xl font-bold text-stone-900 mb-2">Produits Vedettes</h2>
-            <p className="text-stone-600">Nos meilleures ventes sélectionnées pour vous</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-stone-900 mb-3 tracking-tight">Produits Vedettes</h2>
+            <p className="text-stone-500 text-lg">Nos meilleures ventes sélectionnées pour vous</p>
           </div>
-          <Link href="/products" className="group flex items-center gap-2 text-amber-600 font-medium hover:text-amber-700 transition-colors">
-            Tout voir
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          <Link href="/products" className="group flex items-center gap-2 text-amber-600 font-semibold hover:text-amber-700 transition-colors">
+            Explorer le catalogue
+            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
 
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-80 bg-stone-200 rounded-2xl animate-pulse"></div>
+              <div key={i} className="h-[400px] bg-white rounded-3xl animate-pulse shadow-sm border border-stone-100"></div>
             ))}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {featuredProducts.map((product) => (
-              <Link href={`/products/${product.id}`} key={product.id} className="group">
-                <Card className="h-full hover:shadow-xl transition-all duration-300 overflow-hidden border-stone-200">
-                  <div className="aspect-[4/3] bg-stone-100 relative overflow-hidden">
+            {featuredProducts.map((product, index) => (
+              <Link href={`/products/${product.id}`} key={product.id} className="group animate-fade-in-up" style={{ animationDelay: `${index * 100}ms` }}>
+                <Card className="h-full relative overflow-hidden bg-white card-border-gradient shadow-luxury hover-lift transition-all duration-400 p-0 rounded-3xl border-none">
+                  <div className="absolute inset-0 glow-corner pointer-events-none"></div>
+                  <div className="aspect-[4/5] bg-stone-100 relative overflow-hidden m-2 rounded-2xl">
                     <img
                       src={getProductImageUrl(product.main_image)}
                       alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                     />
                     {product.is_new_arrival && (
-                      <span className="absolute top-2 left-2 bg-stone-900 text-white text-xs font-bold px-2 py-1 rounded-md uppercase tracking-wide">
+                      <span className="absolute top-3 left-3 bg-stone-900/90 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wide">
                         Nouveau
                       </span>
                     )}
                   </div>
-                  <div className="p-4">
-                    <div className="text-xs text-amber-600 font-medium mb-1 uppercase tracking-wider">
+                  <div className="p-6 relative z-10">
+                    <div className="text-xs text-amber-600 font-bold mb-2 uppercase tracking-widest">
                       {product.category?.name || 'Collection'}
                     </div>
-                    <h3 className="text-lg font-semibold text-stone-900 group-hover:text-amber-600 transition-colors line-clamp-1">
+                    <h3 className="text-lg font-semibold text-stone-900 group-hover:text-amber-600 transition-colors line-clamp-2">
                       {product.name}
                     </h3>
                   </div>
